@@ -1,0 +1,12 @@
+TRC 파일 생성 완료: /tmp/test_trc_verify.trc (2280 frames, 18 markers)
+=== TRC EXPORTER TEST (elapsed: 0.22s) ===
+  [PASS] 헤더 행1 (PathFileType)
+  [PASS] 헤더 행2 (DataRate)
+  [PASS] FPS 값 (12.5)
+  [PASS] 프레임 수 (2280)
+  [PASS] 마커 수 (18)
+  [PASS] PELV 가상 마커
+  [PASS] LHIP 마커
+  [PASS] 데이터 행 수 (2280)
+  마커 목록: ['PELV', 'Head', 'LSHO', 'RSHO', 'LELB', 'RELB', 'LWRI', 'RWRI', 'LHIP', 'RHIP', 'LKNE', 'RKNE', 'LANK', 'RANK', 'LHEE', 'RHEE', 'LTOE', 'RTOE']
+  결과: ALL PASS

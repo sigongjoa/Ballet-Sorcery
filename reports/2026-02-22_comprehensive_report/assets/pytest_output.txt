@@ -1,0 +1,86 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-9.0.2, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35', 'Packages': {'pytest': '9.0.2', 'pluggy': '1.6.0'}, 'Plugins': {'mock': '3.15.1', 'metadata': '3.1.1', 'playwright': '0.7.2', 'base-url': '2.1.0', 'bdd': '8.1.0', 'hypothesis': '6.148.7', 'html': '4.1.1', 'asyncio': '1.3.0', 'superclaude': '4.2.0', 'cov': '7.0.0', 'anyio': '4.12.0'}, 'Base URL': ''}
+hypothesis profile 'default'
+SuperClaude: 4.2.0
+rootdir: /mnt/d/progress/芭蕾呪法
+configfile: pyproject.toml
+plugins: mock-3.15.1, metadata-3.1.1, playwright-0.7.2, base-url-2.1.0, bdd-8.1.0, hypothesis-6.148.7, html-4.1.1, asyncio-1.3.0, superclaude-4.2.0, cov-7.0.0, anyio-4.12.0
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 26 items
+
+tests/test_beat_loss_analyzer.py::test_calculate_frame_loss_perfect_match PASSED [  3%]
+tests/test_beat_loss_analyzer.py::test_calculate_frame_loss_deviated_frames PASSED [  7%]
+tests/test_beat_loss_analyzer.py::test_calculate_individual_joint_losses PASSED [ 11%]
+tests/test_beat_loss_analyzer.py::test_calculate_delta_t_sync_per_beat PASSED [ 15%]
+tests/test_beat_loss_analyzer.py::test_main_function_generates_outputs FAILED [ 19%]
+tests/test_phase0.py::test_extract_poses_file_not_found PASSED           [ 23%]
+tests/test_phase0.py::test_normalize_single_frame_basic PASSED           [ 26%]
+tests/test_phase0.py::test_normalize_single_frame_no_shoulder PASSED     [ 30%]
+tests/test_phase0.py::test_normalize_poses_full PASSED                   [ 34%]
+tests/test_phase0.py::test_normalize_poses_metadata PASSED               [ 38%]
+tests/test_phase2.py::test_calculate_l2_distance_3d_basic PASSED         [ 42%]
+tests/test_phase2.py::test_calculate_l2_distance_3d_same_point PASSED    [ 46%]
+tests/test_phase2.py::test_compare_poses_use_world_metadata PASSED       [ 50%]
+tests/test_phase2.py::test_compare_poses_2d_backward_compatible PASSED   [ 53%]
+tests/test_phase2.py::test_3d_loss_lower_than_2d PASSED                  [ 57%]
+tests/test_phase2.py::test_compare_poses_3d_no_normalization PASSED      [ 61%]
+tests/test_pm_agent_integration.py::test_pose_extraction_confidence SKIPPED [ 65%]
+tests/test_pm_agent_integration.py::test_normalization_confidence SKIPPED [ 69%]
+tests/test_pm_agent_integration.py::test_normalization_validation PASSED [ 73%]
+tests/test_pm_agent_integration.py::test_l2_distance_validation PASSED   [ 76%]
+tests/test_pm_agent_integration.py::test_mediapipe_model_download_error_learning PASSED [ 80%]
+tests/test_pm_agent_integration.py::test_normalization_edge_case_learning PASSED [ 84%]
+tests/test_pm_agent_integration.py::test_simple_task_budget PASSED       [ 88%]
+tests/test_pm_agent_integration.py::test_medium_task_budget PASSED       [ 92%]
+tests/test_pm_agent_integration.py::test_complex_task_budget PASSED      [ 96%]
+tests/test_pm_agent_integration.py::test_full_pm_agent_workflow SKIPPED  [100%]
+
+=================================== FAILURES ===================================
+_____________________ test_main_function_generates_outputs _____________________
+tests/test_beat_loss_analyzer.py:183: in test_main_function_generates_outputs
+    assert mock_savefig.call_count >= 5 # At least 5 plots should be saved
+E   AssertionError: assert 0 >= 5
+E    +  where 0 = <MagicMock name='addfont' id='139129596848560'>.call_count
+----------------------------- Captured stdout call -----------------------------
+Beat-wise loss plot saved to reports/2026-02-16_phase2_3d_comparison/assets/beat_wise_loss.png
+Beat-wise loss info saved to reports/2026-02-16_phase2_3d_comparison/assets/beat_wise_loss.json
+Frame-by-frame loss plot saved to reports/2026-02-16_phase2_3d_comparison/assets/frame_by_frame_loss.png
+Highlighted error loss plot saved to reports/2026-02-16_phase2_3d_comparison/assets/highlighted_error_loss.png
+Average joint losses plot saved to reports/2026-02-16_phase2_3d_comparison/assets/average_joint_losses.png
+Average joint losses info saved to reports/2026-02-16_phase2_3d_comparison/assets/average_joint_losses.json
+Conceptual Loss_jubeop plot saved to reports/2026-02-16_phase2_3d_comparison/assets/conceptual_loss_jubeop.png
+Conceptual Loss_jubeop info saved to reports/2026-02-16_phase2_3d_comparison/assets/conceptual_loss_jubeop.json
+=============================== warnings summary ===============================
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:64
+  /usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:64: DeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85
+  /usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:85: DeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89
+  /usr/local/lib/python3.10/dist-packages/matplotlib/_fontconfig_pattern.py:89: DeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../usr/local/lib/python3.10/dist-packages/matplotlib/_mathtext.py:45
+  /usr/local/lib/python3.10/dist-packages/matplotlib/_mathtext.py:45: DeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_beat_loss_analyzer.py::test_main_function_generates_outputs - AssertionError: assert 0 >= 5
+ +  where 0 = <MagicMock name='addfont' id='139129596848560'>.call_count
+============= 1 failed, 22 passed, 3 skipped, 14 warnings in 1.67s =============

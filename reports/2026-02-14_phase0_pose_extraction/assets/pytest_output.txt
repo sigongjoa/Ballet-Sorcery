@@ -1,0 +1,7 @@
+============================= test session starts ==============================
+tests/test_phase0.py::test_extract_poses_file_not_found PASSED           [ 20%]
+tests/test_phase0.py::test_normalize_single_frame_basic PASSED           [ 40%]
+tests/test_phase0.py::test_normalize_single_frame_no_shoulder PASSED     [ 60%]
+tests/test_phase0.py::test_normalize_poses_full PASSED                   [ 80%]
+tests/test_phase0.py::test_normalize_poses_metadata PASSED               [100%]
+======================== 5 passed, 14 warnings in 0.84s ========================

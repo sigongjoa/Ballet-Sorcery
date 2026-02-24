@@ -1,0 +1,23 @@
+=== ANGLE COMPARISON TEST (elapsed: 0.56s) ===
+  [PASS] per_frame 키 존재
+  [PASS] summary 키 존재
+  [PASS] per_frame 비어있지 않음
+  [PASS] frame0 ref/comp/diff 키
+  [PASS] diff 각도 float 타입
+  [PASS] mean_diff 존재
+  [PASS] ref_scores 존재
+  [PASS] comp_scores 존재
+  [PASS] mean_diff 값 양수
+
+평균 각도 차이 (|Ref - Comp|):
+  spine_lateral: 8.839°
+  left_hip_flexion: 15.940°
+  left_turnout: 18.939°
+  left_ankle_plantarflexion: 9.664°
+  right_ankle_plantarflexion: 9.357°
+  right_knee_flexion: 17.474°
+  shoulder_symmetry: 0.058°
+  right_hip_flexion: 15.887°
+  left_knee_flexion: 20.535°
+  right_turnout: 12.298°
+결과: ALL PASS

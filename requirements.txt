@@ -1,0 +1,14 @@
+mediapipe>=0.10.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+librosa>=0.11.0
+pytest>=7.0.0
+pandas>=2.0.0
+torch>=2.0.0 # For IK solver
+pyvista>=0.38.0 # For 3D visualization
+scipy>=1.10.0 # Potentially for some math operations, though custom rodrigues is used
+streamlit>=1.20.0
+plotly>=5.13.0
+Pillow>=9.4.0
+pose2sim>=0.10.0

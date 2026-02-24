@@ -1,0 +1,16 @@
+[pose2sim_bridge] TRC 파일 생성 중: data/e2e_output/reference_poses.trc
+TRC 파일 생성 완료: /mnt/d/progress/芭蕾呪法/data/e2e_output/reference_poses.trc (2280 frames, 18 markers)
+[pose2sim_bridge] Python 관절 각도 계산 사용 (OpenSim 없음)
+[pose2sim_bridge] 바이오메카닉스 결과 저장: /tmp/test_bio_out.json
+=== POSE2SIM BRIDGE TEST (elapsed: 0.72s) ===
+  [PASS] method == python
+  [PASS] trc_path 존재
+  [PASS] mot_path == None (정상)
+  [PASS] frames 길이 (2280)
+  [PASS] summary 키 존재
+  [PASS] ballet_scores 3개 키
+  [PASS] JSON 저장 성공
+  [PASS] 저장된 JSON frames 수
+  trc_path: data/e2e_output/reference_poses.trc
+  ballet_scores: {'turnout_score': 0.0, 'knee_alignment_score': 0.9648823715382747, 'spine_alignment_score': 0.0}
+결과: ALL PASS

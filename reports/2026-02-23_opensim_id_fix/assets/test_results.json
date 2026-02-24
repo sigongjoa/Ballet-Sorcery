@@ -1,0 +1,80 @@
+{
+  "results": [
+    {
+      "name": "TRC 파일 생성",
+      "passed": true,
+      "value": "/tmp/test_fix/reference_poses.trc"
+    },
+    {
+      "name": "y_offset 양수",
+      "passed": true,
+      "value": "0.9744m"
+    },
+    {
+      "name": "발목 최소 Y ≥ 0.005m",
+      "passed": false,
+      "value": "0.0000m",
+      "note": "결측 마커 0으로 채워짐"
+    },
+    {
+      "name": "발목 최대 Y < 0.5m",
+      "passed": false,
+      "value": "1.6186m",
+      "note": "점프/아라베스크 등 정상"
+    },
+    {
+      "name": "Simple model scaling",
+      "passed": true,
+      "value": "/tmp/test_fix/scaled_model.osim"
+    },
+    {
+      "name": "IK .mot 생성",
+      "passed": true,
+      "value": "/tmp/test_fix/ref_short_ik.mot"
+    },
+    {
+      "name": "pelvis_ty > 0.5m",
+      "passed": true,
+      "value": "1.0033m (이전: 0.07m)"
+    },
+    {
+      "name": "GRF .mot 생성",
+      "passed": true,
+      "value": "/tmp/test_fix/GRF_estimated.mot"
+    },
+    {
+      "name": "GRF 총 수직력 ≈ 539N",
+      "passed": true,
+      "value": "539.55N"
+    },
+    {
+      "name": "GRF 적용점 Y ≈ 0",
+      "passed": true,
+      "value": "max|py|=0.0000m"
+    },
+    {
+      "name": "ID .sto 생성",
+      "passed": true,
+      "value": "/tmp/test_fix/ID_GeneralizedForces.sto"
+    },
+    {
+      "name": "pelvis 잔류력 < 500N",
+      "passed": true,
+      "value": "200.2N (이전: 614,000N)"
+    },
+    {
+      "name": "hip 모멘트 < 1000N·m",
+      "passed": true,
+      "value": "69.7N·m (이전: 32,385N·m)"
+    },
+    {
+      "name": "ankle 모멘트 < 500N·m",
+      "passed": true,
+      "value": "5.5N·m"
+    }
+  ],
+  "summary": {
+    "passed": 12,
+    "total": 14
+  }
+}

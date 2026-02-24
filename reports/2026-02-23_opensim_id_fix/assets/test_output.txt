@@ -1,0 +1,426 @@
+INFO:opensim_ik:Running ScaleTool with /tmp/test_fix/temp_scaling_setup.xml
+[info] Processing subject Pose2Sim_scaled...
+[info] Step 1: Loading generic model
+[info] Updating Model file from 40000 to latest format...
+[info] Loaded model Pose2Sim_Simple from file /usr/local/lib/python3.10/dist-packages/Pose2Sim/OpenSim_Setup/Model_Pose2Sim_simple.osim
+[info] Loading marker set from '/usr/local/lib/python3.10/dist-packages/Pose2Sim/OpenSim_Setup/Markers_BlazePose.xml'.
+[info] Updated markers in model Pose2Sim_Simple
+[info] Step 2: Scaling generic model
+[info] Loaded marker file /tmp/test_fix/reference_poses.trc (25 markers, 2280 frames)
+[info] Measurement 'torso'
+[info] 	pair 0 (left_shoulder, left_hip): model = 0.540093, experimental = 0.499031
+[info] 	pair 1 (right_shoulder, right_hip): model = 0.540093, experimental = 0.47158
+[info] 	overall scale factor = 0.898558
+[info] Measurement 'arm'
+[info] 	pair 0 (left_shoulder, left_elbow): model = 0.269523, experimental = 0.236249
+[info] 	pair 1 (right_shoulder, right_elbow): model = 0.269523, experimental = 0.23852
+[info] 	overall scale factor = 0.880758
+[info] Measurement 'forearm'
+[info] 	pair 0 (left_elbow, left_wrist): model = 0.237488, experimental = 0.222182
+[info] 	pair 1 (right_elbow, right_wrist): model = 0.237488, experimental = 0.223327
+[info] 	overall scale factor = 0.937961
+[info] Measurement 'thigh'
+[info] 	pair 0 (left_hip, left_knee): model = 0.383429, experimental = 0.357646
+[info] 	pair 1 (right_hip, right_knee): model = 0.383429, experimental = 0.379106
+[info] 	overall scale factor = 0.960742
+[info] Measurement 'shank'
+[info] 	pair 0 (left_knee, left_ankle): model = 0.407832, experimental = 0.404098
+[info] 	pair 1 (right_knee, right_ankle): model = 0.407832, experimental = 0.406464
+[info] 	overall scale factor = 0.993744
+[info] Measurement 'foot'
+[info] 	pair 0 (left_heel, left_foot_index): model = 0.201962, experimental = 0.149626
+[info] 	pair 1 (right_heel, right_foot_index): model = 0.201962, experimental = 0.14916
+[info] 	overall scale factor = 0.739709
+[info] Measurement 'pelvis'
+[info] 	pair 0 (left_hip, right_hip): model = 0.210813, experimental = 0.197675
+[info] 	overall scale factor = 0.93768
+[info] Wrote model file 'scaled_model.osim' from model.
+INFO:opensim_ik:Scaling successful: /tmp/test_fix/scaled_model.osim
+INFO:opensim_ik:Running IKTool with /tmp/test_fix/temp_ik_setup.xml
+[info] Loaded model Pose2Sim_scaled from file /tmp/test_fix/scaled_model.osim
+[warning] Couldn't find file 'r_pelvis.vtp'.
+[warning] Couldn't find file 'l_pelvis.vtp'.
+[warning] Couldn't find file 'sacrum.vtp'.
+[warning] Couldn't find file 'femur_r.vtp'.
+[warning] Couldn't find file 'tibia_r.vtp'.
+[warning] Couldn't find file 'fibula_r.vtp'.
+[warning] Couldn't find file 'talus_rv.vtp'.
+[warning] Couldn't find file 'foot.vtp'.
+[warning] Couldn't find file 'bofoot.vtp'.
+[warning] Couldn't find file 'femur_l.vtp'.
+[warning] Couldn't find file 'tibia_l.vtp'.
+[warning] Couldn't find file 'fibula_l.vtp'.
+[warning] Couldn't find file 'talus_lv.vtp'.
+[warning] Couldn't find file 'l_foot.vtp'.
+[warning] Couldn't find file 'l_bofoot.vtp'.
+[warning] Couldn't find file 'hat_spine.vtp'.
+[warning] Couldn't find file 'hat_ribs_scap.vtp'.
+[warning] Couldn't find file 'jaw.vtp'.
+[warning] Couldn't find file 'skull.vtp'.
+[warning] Couldn't find file 'humerus_rv.vtp'.
+[warning] Couldn't find file 'ulna_rv.vtp'.
+[warning] Couldn't find file 'radius_rv.vtp'.
+[warning] Couldn't find file 'pisiform_rvs.vtp'.
+[warning] Couldn't find file 'lunate_rvs.vtp'.
+[warning] Couldn't find file 'scaphoid_rvs.vtp'.
+[warning] Couldn't find file 'triquetrum_rvs.vtp'.
+[warning] Couldn't find file 'hamate_rvs.vtp'.
+[warning] Couldn't find file 'capitate_rvs.vtp'.
+[warning] Couldn't find file 'trapezoid_rvs.vtp'.
+[warning] Couldn't find file 'trapezium_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal2_rvs.vtp'.
+[warning] Couldn't find file 'index_proximal_rvs.vtp'.
+[warning] Couldn't find file 'index_medial_rvs.vtp'.
+[warning] Couldn't find file 'index_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal3_rvs.vtp'.
+[warning] Couldn't find file 'middle_proximal_rvs.vtp'.
+[warning] Couldn't find file 'middle_medial_rvs.vtp'.
+[warning] Couldn't find file 'middle_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal4_rvs.vtp'.
+[warning] Couldn't find file 'ring_proximal_rvs.vtp'.
+[warning] Couldn't find file 'ring_medial_rvs.vtp'.
+[warning] Couldn't find file 'ring_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal5_rvs.vtp'.
+[warning] Couldn't find file 'little_proximal_rvs.vtp'.
+[warning] Couldn't find file 'little_medial_rvs.vtp'.
+[warning] Couldn't find file 'little_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal1_rvs.vtp'.
+[warning] Couldn't find file 'thumb_proximal_rvs.vtp'.
+[warning] Couldn't find file 'thumb_distal_rvs.vtp'.
+[warning] Couldn't find file 'humerus_lv.vtp'.
+[warning] Couldn't find file 'ulna_lv.vtp'.
+[warning] Couldn't find file 'radius_lv.vtp'.
+[warning] Couldn't find file 'pisiform_lvs.vtp'.
+[warning] Couldn't find file 'lunate_lvs.vtp'.
+[warning] Couldn't find file 'scaphoid_lvs.vtp'.
+[warning] Couldn't find file 'triquetrum_lvs.vtp'.
+[warning] Couldn't find file 'hamate_lvs.vtp'.
+[warning] Couldn't find file 'capitate_lvs.vtp'.
+[warning] Couldn't find file 'trapezoid_lvs.vtp'.
+[warning] Couldn't find file 'trapezium_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal2_lvs.vtp'.
+[warning] Couldn't find file 'index_proximal_lvs.vtp'.
+[warning] Couldn't find file 'index_medial_lvs.vtp'.
+[warning] Couldn't find file 'index_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal3_lvs.vtp'.
+[warning] Couldn't find file 'middle_proximal_lvs.vtp'.
+[warning] Couldn't find file 'middle_medial_lvs.vtp'.
+[warning] Couldn't find file 'middle_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal4_lvs.vtp'.
+[warning] Couldn't find file 'ring_proximal_lvs.vtp'.
+[warning] Couldn't find file 'ring_medial_lvs.vtp'.
+[warning] Couldn't find file 'ring_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal5_lvs.vtp'.
+[warning] Couldn't find file 'little_proximal_lvs.vtp'.
+[warning] Couldn't find file 'little_medial_lvs.vtp'.
+[warning] Couldn't find file 'little_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal1_lvs.vtp'.
+[warning] Couldn't find file 'thumb_proximal_lvs.vtp'.
+[warning] Couldn't find file 'thumb_distal_lvs.vtp'.
+
+               MODEL: Pose2Sim_scaled
+         coordinates: 40
+              forces: 0
+           actuators: 0
+             muscles: 0
+            analyses: 0
+              probes: 0
+              bodies: 22
+              joints: 22
+         constraints: 0
+             markers: 25
+         controllers: 0
+  contact geometries: 13
+misc modelcomponents: 0
+[info] Running tool .
+[info] Frame 0 (t = 0.0):	 total squared error = 0.180904, marker error: RMS = 0.0850656, max = 0.232734 (nose)
+[info] Frame 1 (t = 0.08):	 total squared error = 0.17774, marker error: RMS = 0.0843185, max = 0.2284 (nose)
+[info] Frame 2 (t = 0.16):	 total squared error = 0.178756, marker error: RMS = 0.0845592, max = 0.225020 (nose)
+[info] Frame 3 (t = 0.24):	 total squared error = 0.177424, marker error: RMS = 0.0842434, max = 0.2214 (nose)
+[info] Frame 4 (t = 0.32):	 total squared error = 0.171509, marker error: RMS = 0.0828274, max = 0.216809 (nose)
+[info] Frame 5 (t = 0.4):	 total squared error = 0.164191, marker error: RMS = 0.0810410, max = 0.210448 (nose)
+[info] Frame 6 (t = 0.48):	 total squared error = 0.170717, marker error: RMS = 0.0826358, max = 0.213187 (nose)
+[info] Frame 7 (t = 0.56):	 total squared error = 0.182067, marker error: RMS = 0.0853385, max = 0.221946 (nose)
+[info] Frame 8 (t = 0.64):	 total squared error = 0.214325, marker error: RMS = 0.0925905, max = 0.239364 (nose)
+[info] Frame 9 (t = 0.72):	 total squared error = 0.231348, marker error: RMS = 0.0961972, max = 0.247227 (nose)
+[info] Frame 10 (t = 0.8):	 total squared error = 0.244322, marker error: RMS = 0.0988579, max = 0.252629 (nose)
+[info] Frame 11 (t = 0.88):	 total squared error = 0.288041, marker error: RMS = 0.107339, max = 0.266723 (nose)
+[info] Frame 12 (t = 0.96):	 total squared error = 0.291849, marker error: RMS = 0.108046, max = 0.267192 (nose)
+[info] Frame 13 (t = 1.04):	 total squared error = 0.316824, marker error: RMS = 0.112574, max = 0.276767 (nose)
+[info] Frame 14 (t = 1.12):	 total squared error = 0.330117, marker error: RMS = 0.114912, max = 0.280707 (nose)
+[info] Frame 15 (t = 1.2):	 total squared error = 0.330722, marker error: RMS = 0.115017, max = 0.278352 (nose)
+[info] Frame 16 (t = 1.28):	 total squared error = 0.328713, marker error: RMS = 0.114667, max = 0.274826 (nose)
+[info] Frame 17 (t = 1.36):	 total squared error = 0.338836, marker error: RMS = 0.116419, max = 0.275879 (nose)
+[info] Frame 18 (t = 1.44):	 total squared error = 0.350271, marker error: RMS = 0.118367, max = 0.280640 (nose)
+[info] Frame 19 (t = 1.52):	 total squared error = 0.35119, marker error: RMS = 0.118523, max = 0.281428 (nose)
+[info] Frame 20 (t = 1.6):	 total squared error = 0.353777, marker error: RMS = 0.118958, max = 0.28345 (nose)
+[info] Frame 21 (t = 1.68):	 total squared error = 0.351243, marker error: RMS = 0.118532, max = 0.283122 (nose)
+[info] Frame 22 (t = 1.76):	 total squared error = 0.355923, marker error: RMS = 0.119319, max = 0.283117 (nose)
+[info] Frame 23 (t = 1.84):	 total squared error = 0.355845, marker error: RMS = 0.119305, max = 0.28393 (nose)
+[info] Frame 24 (t = 1.92):	 total squared error = 0.344894, marker error: RMS = 0.117455, max = 0.285249 (nose)
+[info] Frame 25 (t = 2.0):	 total squared error = 0.334101, marker error: RMS = 0.115603, max = 0.281885 (nose)
+[info] Frame 26 (t = 2.08):	 total squared error = 0.321213, marker error: RMS = 0.113351, max = 0.273869 (nose)
+[info] Frame 27 (t = 2.16):	 total squared error = 0.305689, marker error: RMS = 0.110578, max = 0.269807 (nose)
+[info] Frame 28 (t = 2.24):	 total squared error = 0.281595, marker error: RMS = 0.106131, max = 0.262308 (nose)
+[info] Frame 29 (t = 2.32):	 total squared error = 0.272465, marker error: RMS = 0.104396, max = 0.259092 (nose)
+[info] Frame 30 (t = 2.4):	 total squared error = 0.266943, marker error: RMS = 0.103333, max = 0.26137 (nose)
+[info] Frame 31 (t = 2.48):	 total squared error = 0.2757, marker error: RMS = 0.105014, max = 0.267753 (nose)
+[info] Frame 32 (t = 2.56):	 total squared error = 0.279611, marker error: RMS = 0.105757, max = 0.268389 (nose)
+[info] Frame 33 (t = 2.64):	 total squared error = 0.291933, marker error: RMS = 0.108062, max = 0.273225 (nose)
+[info] Frame 34 (t = 2.72):	 total squared error = 0.29559, marker error: RMS = 0.108736, max = 0.273699 (nose)
+[info] Frame 35 (t = 2.8):	 total squared error = 0.300804, marker error: RMS = 0.109691, max = 0.279081 (nose)
+[info] Frame 36 (t = 2.88):	 total squared error = 0.296792, marker error: RMS = 0.108957, max = 0.281215 (nose)
+[info] Frame 37 (t = 2.96):	 total squared error = 0.296225, marker error: RMS = 0.108853, max = 0.285021 (nose)
+[info] Frame 38 (t = 3.04):	 total squared error = 0.295663, marker error: RMS = 0.108750, max = 0.285169 (nose)
+[info] Frame 39 (t = 3.12):	 total squared error = 0.290330, marker error: RMS = 0.107765, max = 0.283998 (nose)
+[info] Frame 40 (t = 3.2):	 total squared error = 0.29194, marker error: RMS = 0.108063, max = 0.284825 (nose)
+[info] Frame 41 (t = 3.28):	 total squared error = 0.28758, marker error: RMS = 0.107253, max = 0.284221 (nose)
+[info] Frame 42 (t = 3.36):	 total squared error = 0.287314, marker error: RMS = 0.107203, max = 0.284759 (nose)
+[info] Frame 43 (t = 3.44):	 total squared error = 0.284207, marker error: RMS = 0.106622, max = 0.283987 (nose)
+[info] Frame 44 (t = 3.52):	 total squared error = 0.2839, marker error: RMS = 0.106565, max = 0.283907 (nose)
+[info] Frame 45 (t = 3.6):	 total squared error = 0.282501, marker error: RMS = 0.106302, max = 0.284309 (nose)
+[info] Frame 46 (t = 3.68):	 total squared error = 0.285090, marker error: RMS = 0.106788, max = 0.285128 (nose)
+[info] Frame 47 (t = 3.76):	 total squared error = 0.286009, marker error: RMS = 0.106960, max = 0.284874 (nose)
+[info] Frame 48 (t = 3.84):	 total squared error = 0.293817, marker error: RMS = 0.108410, max = 0.287695 (nose)
+[info] Frame 49 (t = 3.92):	 total squared error = 0.304232, marker error: RMS = 0.110315, max = 0.290171 (nose)
+[info] Frame 50 (t = 4.0):	 total squared error = 0.314755, marker error: RMS = 0.112206, max = 0.293054 (nose)
+[info] Frame 51 (t = 4.08):	 total squared error = 0.329746, marker error: RMS = 0.114847, max = 0.298567 (nose)
+[info] Frame 52 (t = 4.16):	 total squared error = 0.336275, marker error: RMS = 0.115978, max = 0.298038 (nose)
+[info] Frame 53 (t = 4.24):	 total squared error = 0.341414, marker error: RMS = 0.116861, max = 0.301408 (nose)
+[info] Frame 54 (t = 4.32):	 total squared error = 0.351935, marker error: RMS = 0.118648, max = 0.303292 (nose)
+[info] Frame 55 (t = 4.4):	 total squared error = 0.380331, marker error: RMS = 0.123342, max = 0.31559 (nose)
+[info] Frame 56 (t = 4.48):	 total squared error = 0.379317, marker error: RMS = 0.123177, max = 0.313311 (nose)
+[info] Frame 57 (t = 4.56):	 total squared error = 0.379812, marker error: RMS = 0.123258, max = 0.312288 (nose)
+[info] Frame 58 (t = 4.64):	 total squared error = 0.377319, marker error: RMS = 0.122853, max = 0.310052 (nose)
+[info] Frame 59 (t = 4.72):	 total squared error = 0.383125, marker error: RMS = 0.123794, max = 0.310644 (nose)
+[info] Frame 60 (t = 4.8):	 total squared error = 0.381867, marker error: RMS = 0.123591, max = 0.309181 (nose)
+[info] Frame 61 (t = 4.88):	 total squared error = 0.389126, marker error: RMS = 0.12476, max = 0.309744 (nose)
+[info] Frame 62 (t = 4.96):	 total squared error = 0.403995, marker error: RMS = 0.127121, max = 0.312925 (nose)
+[info] Frame 63 (t = 5.04):	 total squared error = 0.403260, marker error: RMS = 0.127006, max = 0.310569 (nose)
+[info] Frame 64 (t = 5.12):	 total squared error = 0.412079, marker error: RMS = 0.128387, max = 0.314732 (nose)
+[info] Frame 65 (t = 5.2):	 total squared error = 0.404563, marker error: RMS = 0.12721, max = 0.311292 (nose)
+[info] Frame 66 (t = 5.28):	 total squared error = 0.379385, marker error: RMS = 0.123189, max = 0.298697 (nose)
+[info] Frame 67 (t = 5.36):	 total squared error = 0.376618, marker error: RMS = 0.122738, max = 0.303560 (nose)
+[info] Frame 68 (t = 5.44):	 total squared error = 0.387992, marker error: RMS = 0.124578, max = 0.309893 (nose)
+[info] Frame 69 (t = 5.52):	 total squared error = 0.36487, marker error: RMS = 0.120809, max = 0.306355 (nose)
+[info] Frame 70 (t = 5.6):	 total squared error = 0.318889, marker error: RMS = 0.112941, max = 0.287726 (nose)
+[info] Frame 71 (t = 5.68):	 total squared error = 0.275133, marker error: RMS = 0.104906, max = 0.271602 (nose)
+[info] Frame 72 (t = 5.76):	 total squared error = 0.252072, marker error: RMS = 0.100414, max = 0.257156 (nose)
+[info] Frame 73 (t = 5.84):	 total squared error = 0.224776, marker error: RMS = 0.0948212, max = 0.236079 (nose)
+[info] Frame 74 (t = 5.92):	 total squared error = 0.201737, marker error: RMS = 0.0898303, max = 0.237242 (nose)
+[info] Frame 75 (t = 6.0):	 total squared error = 0.201478, marker error: RMS = 0.0897727, max = 0.238635 (nose)
+[info] Frame 76 (t = 6.08):	 total squared error = 0.194946, marker error: RMS = 0.0883053, max = 0.234606 (nose)
+[info] Frame 77 (t = 6.16):	 total squared error = 0.18859, marker error: RMS = 0.0868539, max = 0.229636 (nose)
+[info] Frame 78 (t = 6.24):	 total squared error = 0.235754, marker error: RMS = 0.0971090, max = 0.277183 (nose)
+[info] Frame 79 (t = 6.32):	 total squared error = 0.201267, marker error: RMS = 0.0897255, max = 0.249302 (nose)
+[info] Frame 80 (t = 6.4):	 total squared error = 0.203366, marker error: RMS = 0.0901923, max = 0.241456 (nose)
+[info] Frame 81 (t = 6.48):	 total squared error = 0.160597, marker error: RMS = 0.0801490, max = 0.213805 (nose)
+[info] Frame 82 (t = 6.56):	 total squared error = 0.171446, marker error: RMS = 0.0828121, max = 0.216941 (nose)
+[info] Frame 83 (t = 6.64):	 total squared error = 0.175061, marker error: RMS = 0.0836807, max = 0.179927 (nose)
+[info] Frame 84 (t = 6.72):	 total squared error = 0.221195, marker error: RMS = 0.0940627, max = 0.227899 (nose)
+[info] Frame 85 (t = 6.8):	 total squared error = 0.317917, marker error: RMS = 0.112768, max = 0.272572 (nose)
+[info] Frame 86 (t = 6.88):	 total squared error = 0.278421, marker error: RMS = 0.105531, max = 0.277715 (nose)
+[info] Frame 87 (t = 6.96):	 total squared error = 0.245838, marker error: RMS = 0.099164, max = 0.222009 (left_knee)
+[info] Frame 88 (t = 7.04):	 total squared error = 0.224037, marker error: RMS = 0.0946652, max = 0.209486 (left_knee)
+[info] Frame 89 (t = 7.12):	 total squared error = 0.298311, marker error: RMS = 0.109236, max = 0.299909 (left_knee)
+[info] Frame 90 (t = 7.2):	 total squared error = 0.175412, marker error: RMS = 0.0837644, max = 0.1995 (nose)
+[info] Frame 91 (t = 7.28):	 total squared error = 0.224202, marker error: RMS = 0.0947, max = 0.239185 (nose)
+[info] Frame 92 (t = 7.36):	 total squared error = 0.310175, marker error: RMS = 0.111387, max = 0.28769 (nose)
+[info] Frame 93 (t = 7.44):	 total squared error = 0.226003, marker error: RMS = 0.0950795, max = 0.225473 (nose)
+[info] Frame 94 (t = 7.52):	 total squared error = 0.239072, marker error: RMS = 0.0977899, max = 0.218884 (nose)
+[info] Frame 95 (t = 7.6):	 total squared error = 0.303067, marker error: RMS = 0.110103, max = 0.304999 (left_knee)
+[info] Frame 96 (t = 7.68):	 total squared error = 0.224717, marker error: RMS = 0.0948086, max = 0.254426 (left_knee)
+[info] Frame 97 (t = 7.76):	 total squared error = 0.254002, marker error: RMS = 0.100797, max = 0.292738 (left_knee)
+[info] Frame 98 (t = 7.84):	 total squared error = 0.208612, marker error: RMS = 0.0913481, max = 0.221457 (nose)
+[info] Frame 99 (t = 7.92):	 total squared error = 0.159962, marker error: RMS = 0.0799905, max = 0.15348 (right_knee)
+[info] InverseKinematicsTool completed 100 frames in 799 millisecond(s).
+INFO:opensim_ik:IK successful: /tmp/test_fix/ref_short_ik.mot
+INFO:opensim_dynamics:GRF estimation successful: /tmp/test_fix/GRF_estimated.mot
+INFO:opensim_dynamics:Running Inverse Dynamics Tool...
+[info] Loaded model Pose2Sim_scaled from file /tmp/test_fix/scaled_model.osim
+[warning] Couldn't find file 'r_pelvis.vtp'.
+[warning] Couldn't find file 'l_pelvis.vtp'.
+[warning] Couldn't find file 'sacrum.vtp'.
+[warning] Couldn't find file 'femur_r.vtp'.
+[warning] Couldn't find file 'tibia_r.vtp'.
+[warning] Couldn't find file 'fibula_r.vtp'.
+[warning] Couldn't find file 'talus_rv.vtp'.
+[warning] Couldn't find file 'foot.vtp'.
+[warning] Couldn't find file 'bofoot.vtp'.
+[warning] Couldn't find file 'femur_l.vtp'.
+[warning] Couldn't find file 'tibia_l.vtp'.
+[warning] Couldn't find file 'fibula_l.vtp'.
+[warning] Couldn't find file 'talus_lv.vtp'.
+[warning] Couldn't find file 'l_foot.vtp'.
+[warning] Couldn't find file 'l_bofoot.vtp'.
+[warning] Couldn't find file 'hat_spine.vtp'.
+[warning] Couldn't find file 'hat_ribs_scap.vtp'.
+[warning] Couldn't find file 'jaw.vtp'.
+[warning] Couldn't find file 'skull.vtp'.
+[warning] Couldn't find file 'humerus_rv.vtp'.
+[warning] Couldn't find file 'ulna_rv.vtp'.
+[warning] Couldn't find file 'radius_rv.vtp'.
+[warning] Couldn't find file 'pisiform_rvs.vtp'.
+[warning] Couldn't find file 'lunate_rvs.vtp'.
+[warning] Couldn't find file 'scaphoid_rvs.vtp'.
+[warning] Couldn't find file 'triquetrum_rvs.vtp'.
+[warning] Couldn't find file 'hamate_rvs.vtp'.
+[warning] Couldn't find file 'capitate_rvs.vtp'.
+[warning] Couldn't find file 'trapezoid_rvs.vtp'.
+[warning] Couldn't find file 'trapezium_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal2_rvs.vtp'.
+[warning] Couldn't find file 'index_proximal_rvs.vtp'.
+[warning] Couldn't find file 'index_medial_rvs.vtp'.
+[warning] Couldn't find file 'index_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal3_rvs.vtp'.
+[warning] Couldn't find file 'middle_proximal_rvs.vtp'.
+[warning] Couldn't find file 'middle_medial_rvs.vtp'.
+[warning] Couldn't find file 'middle_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal4_rvs.vtp'.
+[warning] Couldn't find file 'ring_proximal_rvs.vtp'.
+[warning] Couldn't find file 'ring_medial_rvs.vtp'.
+[warning] Couldn't find file 'ring_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal5_rvs.vtp'.
+[warning] Couldn't find file 'little_proximal_rvs.vtp'.
+[warning] Couldn't find file 'little_medial_rvs.vtp'.
+[warning] Couldn't find file 'little_distal_rvs.vtp'.
+[warning] Couldn't find file 'metacarpal1_rvs.vtp'.
+[warning] Couldn't find file 'thumb_proximal_rvs.vtp'.
+[warning] Couldn't find file 'thumb_distal_rvs.vtp'.
+[warning] Couldn't find file 'humerus_lv.vtp'.
+[warning] Couldn't find file 'ulna_lv.vtp'.
+[warning] Couldn't find file 'radius_lv.vtp'.
+[warning] Couldn't find file 'pisiform_lvs.vtp'.
+[warning] Couldn't find file 'lunate_lvs.vtp'.
+[warning] Couldn't find file 'scaphoid_lvs.vtp'.
+[warning] Couldn't find file 'triquetrum_lvs.vtp'.
+[warning] Couldn't find file 'hamate_lvs.vtp'.
+[warning] Couldn't find file 'capitate_lvs.vtp'.
+[warning] Couldn't find file 'trapezoid_lvs.vtp'.
+[warning] Couldn't find file 'trapezium_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal2_lvs.vtp'.
+[warning] Couldn't find file 'index_proximal_lvs.vtp'.
+[warning] Couldn't find file 'index_medial_lvs.vtp'.
+[warning] Couldn't find file 'index_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal3_lvs.vtp'.
+[warning] Couldn't find file 'middle_proximal_lvs.vtp'.
+[warning] Couldn't find file 'middle_medial_lvs.vtp'.
+[warning] Couldn't find file 'middle_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal4_lvs.vtp'.
+[warning] Couldn't find file 'ring_proximal_lvs.vtp'.
+[warning] Couldn't find file 'ring_medial_lvs.vtp'.
+[warning] Couldn't find file 'ring_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal5_lvs.vtp'.
+[warning] Couldn't find file 'little_proximal_lvs.vtp'.
+[warning] Couldn't find file 'little_medial_lvs.vtp'.
+[warning] Couldn't find file 'little_distal_lvs.vtp'.
+[warning] Couldn't find file 'metacarpal1_lvs.vtp'.
+[warning] Couldn't find file 'thumb_proximal_lvs.vtp'.
+[warning] Couldn't find file 'thumb_distal_lvs.vtp'.
+
+               MODEL: Pose2Sim_scaled
+         coordinates: 40
+              forces: 0
+           actuators: 0
+             muscles: 0
+            analyses: 0
+              probes: 0
+              bodies: 22
+              joints: 22
+         constraints: 0
+             markers: 25
+         controllers: 0
+  contact geometries: 13
+misc modelcomponents: 0
+[info] Running tool ...
+[info] Storage: read data file = /tmp/test_fix/GRF_estimated.mot (nr=100 nc=19)
+[info] ExternalForce::right_force Data source being set to Coordinates
+[info] ExternalForce::left_force Data source being set to Coordinates
+[info] Storage: read data file = /tmp/test_fix/ref_short_ik.mot (nr=100 nc=41)
+[info] Low-pass filtering coordinates data with a cutoff frequency of 6.0...
+[info] InverseDynamicsTool: 100 time frames in 27 millisecond(s).
+============================================================
+TEST 1: TRC 내보내기 (feet_on_floor)
+============================================================
+feet_on_floor 오프셋 적용: +0.9744m
+TRC 파일 생성 완료: /tmp/test_fix/reference_poses.trc (2280 frames, 25 markers)
+y_offset = 0.9744m
+✅ PASS | TRC 파일 생성 | /tmp/test_fix/reference_poses.trc 
+✅ PASS | y_offset 양수 (발을 위로) | 0.9744m (기대: ~+0.75m)
+❌ FAIL | 발목 최소 Y ≥ 0.005m (지면 위) | 0.0000m (기대: ≈0.01m)
+❌ FAIL | 발목 최대 Y < 0.5m (비정상 없음) | 1.6186m 
+TRC 생성 시간: 0.7s
+
+============================================================
+TEST 2: Scaling (simple model)
+============================================================
+✅ PASS | Simple model scaling 성공 | /tmp/test_fix/scaled_model.osim 
+Scaling 시간: 0.4s
+
+============================================================
+TEST 3: IK (간단 검증 - 첫 100프레임만)
+============================================================
+feet_on_floor 오프셋 적용: +0.9161m
+TRC 파일 생성 완료: /tmp/test_fix/ref_short.trc (100 frames, 25 markers)
+✅ PASS | IK .mot 생성 | /tmp/test_fix/ref_short_ik.mot 
+IK 시간 (100프레임): 0.9s
+✅ PASS | pelvis_ty > 0.5m (지면기준 올바름) | 1.0033m (기대: ~0.77m, 이전: 0.07m)
+
+============================================================
+TEST 4: GRF 추정 (TRC 발 위치 사용)
+============================================================
+✅ PASS | GRF .mot 생성 | /tmp/test_fix/GRF_estimated.mot 
+✅ PASS | GRF 총 수직력 ≈ 체중 (539N) | 539.55N 
+✅ PASS | GRF 적용점 Y ≈ 0 (지면) | max|py|=0.0000m 
+GRF 시간: 0.0s
+
+============================================================
+TEST 5: Inverse Dynamics
+============================================================
+✅ PASS | ID .sto 생성 | /tmp/test_fix/ID_GeneralizedForces.sto 
+  pelvis_ty_force: mean=-122.9N, max=4210.7N
+  hip_flexion_l:   mean=-15.9 N·m
+  hip_flexion_r:   mean=-1.7 N·m
+  knee_angle_l:    mean=-43.6 N·m
+  ankle_angle_l:   mean=-4.1 N·m
+✅ PASS | pelvis 잔류력 < 500N | 200.2N (이전: 614,000N)
+✅ PASS | hip 모멘트 < 1000N·m | 69.7N·m (이전: 32,385N·m)
+✅ PASS | ankle 모멘트 < 500N·m | 5.5N·m 
+ID 시간: 0.1s
+
+============================================================
+테스트 요약
+============================================================
+결과: 12/14 PASS
+  ✅ TRC 파일 생성: /tmp/test_fix/reference_poses.trc 
+  ✅ y_offset 양수 (발을 위로): 0.9744m (기대: ~+0.75m)
+  ❌ 발목 최소 Y ≥ 0.005m (지면 위): 0.0000m (기대: ≈0.01m)
+  ❌ 발목 최대 Y < 0.5m (비정상 없음): 1.6186m 
+  ✅ Simple model scaling 성공: /tmp/test_fix/scaled_model.osim 
+  ✅ IK .mot 생성: /tmp/test_fix/ref_short_ik.mot 
+  ✅ pelvis_ty > 0.5m (지면기준 올바름): 1.0033m (기대: ~0.77m, 이전: 0.07m)
+  ✅ GRF .mot 생성: /tmp/test_fix/GRF_estimated.mot 
+  ✅ GRF 총 수직력 ≈ 체중 (539N): 539.55N 
+  ✅ GRF 적용점 Y ≈ 0 (지면): max|py|=0.0000m 
+  ✅ ID .sto 생성: /tmp/test_fix/ID_GeneralizedForces.sto 
+  ✅ pelvis 잔류력 < 500N: 200.2N (이전: 614,000N)
+  ✅ hip 모멘트 < 1000N·m: 69.7N·m (이전: 32,385N·m)
+  ✅ ankle 모멘트 < 500N·m: 5.5N·m 
+Traceback (most recent call last):
+  File "/tmp/test_fix.py", line 143, in <module>
+    json.dump({'results': results, 'summary': {'passed': passed, 'total': total}}, f, ensure_ascii=False, indent=2)
+  File "/usr/lib/python3.10/json/__init__.py", line 179, in dump
+    for chunk in iterable:
+  File "/usr/lib/python3.10/json/encoder.py", line 431, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib/python3.10/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.10/json/encoder.py", line 325, in _iterencode_list
+    yield from chunks
+  File "/usr/lib/python3.10/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.10/json/encoder.py", line 438, in _iterencode
+    o = _default(o)
+  File "/usr/lib/python3.10/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type bool_ is not JSON serializable

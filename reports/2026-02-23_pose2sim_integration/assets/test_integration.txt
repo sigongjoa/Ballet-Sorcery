@@ -1,0 +1,15 @@
+=== PIPELINE + VIEWER INTEGRATION TEST ===
+  [PASS] Python 문법 정상
+  [PASS] Step 5 블록 존재
+  [PASS] run_biomechanics_analysis 임포트
+  [PASS] compare_angle_sequences 임포트
+  [PASS] biomechanics 반환값 포함
+  [PASS] 오류 방지 try/except 존재
+  [PASS] viewer 4탭 레이아웃
+  [PASS] load_biomechanics 함수
+  [PASS] render_angle_timeseries
+  [PASS] render_ballet_scores_cards
+  [PASS] render_mean_angle_table
+  [PASS] ANGLE_GROUPS 정의
+  [PASS] requirements pose2sim 추가
+결과: ALL PASS

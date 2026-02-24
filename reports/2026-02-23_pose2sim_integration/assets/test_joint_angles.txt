@@ -1,0 +1,39 @@
+=== JOINT ANGLES TEST (elapsed: 0.35s) ===
+  [PASS] 시퀀스 프레임 수 (2280)
+  [PASS] frame0 모든 각도 키 존재
+  [PASS] frame0 None 값 없음
+  [PASS] 무릎 굴곡 범위 정상 (0~90°)
+  [PASS] 발목 저굴 범위 정상 (50~160°)
+  [PASS] 턴아웃 범위 정상 (0~90°)
+  [PASS] 발레 스코어 범위 정상 (0~1)
+  [PASS] mean_angles 완성
+
+Frame 0 각도 값:
+  left_knee_flexion: 30.045°
+  right_knee_flexion: 21.945°
+  left_hip_flexion: 25.944°
+  right_hip_flexion: 16.946°
+  left_turnout: 14.851°
+  right_turnout: 7.821°
+  left_ankle_plantarflexion: 107.972°
+  right_ankle_plantarflexion: 106.969°
+  spine_lateral: 10.903°
+  shoulder_symmetry: 0.021°
+
+평균 각도:
+  right_knee_flexion: 39.812°
+  left_ankle_plantarflexion: 112.713°
+  shoulder_symmetry: 0.119°
+  left_hip_flexion: 31.893°
+  left_knee_flexion: 39.110°
+  spine_lateral: 16.400°
+  right_turnout: 12.664°
+  right_ankle_plantarflexion: 112.429°
+  right_hip_flexion: 30.327°
+  left_turnout: 24.695°
+
+발레 스코어:
+  turnout_score: 0.0000
+  knee_alignment_score: 0.9649
+  spine_alignment_score: 0.0000
+결과: ALL PASS
