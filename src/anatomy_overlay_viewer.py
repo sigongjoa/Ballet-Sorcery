@@ -79,9 +79,18 @@ def landmarks_to_opensim_coords(landmarks):
     lw, rw = pt(15), pt(16)
     lf, rf = pt(31), pt(32)
 
+    # pelvis_ty: 발목(가장 낮은 점)을 바닥(y=0)으로 기준,
+    # OpenSim Y-UP / MediaPipe Y-DOWN → 골반 높이 = |hip_y - ankle_y| * 신체스케일
+    ankle_y_mp = (la[1] + ra[1]) / 2.0   # MediaPipe Y-DOWN (클수록 낮음)
+    hip_y_mp   = (lh[1] + rh[1]) / 2.0
+    # 신체 비율: 발목→골반 거리 (MediaPipe 정규화 단위) → OpenSim 미터 (약 1m 신장 기준)
+    hip_ankle_ratio = max(abs(hip_y_mp - ankle_y_mp), 0.1)
+    body_scale = 0.9 / hip_ankle_ratio   # 발목→골반 ≈ 0.9m
+    pelvis_ty = hip_ankle_ratio * body_scale  # ≈ 0.9m 고정되지만 비율 유지
+
     coords = {
         'pelvis_tilt': 0.0, 'pelvis_list': 0.0, 'pelvis_rotation': 0.0,
-        'pelvis_tx': 0.0, 'pelvis_ty': 1.0, 'pelvis_tz': 0.0,
+        'pelvis_tx': 0.0, 'pelvis_ty': float(pelvis_ty), 'pelvis_tz': 0.0,
         'knee_angle_r': math.radians(calc_angle(rh, rk, ra) - 180),
         'knee_angle_l': math.radians(calc_angle(lh, lk, la) - 180),
         'hip_flexion_r': math.radians(180 - calc_angle(rs, rh, rk)),
@@ -285,10 +294,19 @@ def create_anatomy_video(input_mov, output_path=None):
     print("2패스: VTP 뼈 렌더링...")
     vtp_frames = prerender_vtp_frames(all_landmarks, model, state)
 
-    # 5. 3패스: 3패널 결합 → MP4 출력
-    print("3패스: 3패널 결합...")
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (1920 * 3, 1080))
+    # 5. 3패스: 3패널 결합 → ffmpeg 파이프로 H.264 직접 출력
+    print("3패스: 3패널 결합 (H.264 출력)...")
+    out_w, out_h = 1920 * 3, 1080
+    ffmpeg_cmd = [
+        "ffmpeg", "-y",
+        "-f", "rawvideo", "-vcodec", "rawvideo",
+        "-s", f"{out_w}x{out_h}", "-pix_fmt", "bgr24",
+        "-r", str(fps), "-i", "pipe:0",
+        "-c:v", "libx264", "-crf", "23", "-preset", "fast",
+        "-pix_fmt", "yuv420p",
+        output_path
+    ]
+    ffmpeg_proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
 
     for frame, landmarks, vtp_frame in tqdm(
             zip(all_frames, all_landmarks, vtp_frames),
@@ -298,12 +316,13 @@ def create_anatomy_video(input_mov, output_path=None):
         p3 = vtp_frame
 
         combined = np.hstack((p1, p2, p3))
-        cv2.putText(combined, "Original",        (50,          80), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 3)
-        cv2.putText(combined, "Overlay",          (1920 + 50,   80), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 3)
-        cv2.putText(combined, "OpenSim VTP",      (3840 + 50,   80), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 3)
-        out.write(combined)
+        cv2.putText(combined, "Original",    (50,        80), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 3)
+        cv2.putText(combined, "Overlay",     (1920 + 50, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 3)
+        cv2.putText(combined, "OpenSim VTP", (3840 + 50, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 3)
+        ffmpeg_proc.stdin.write(combined.tobytes())
 
-    out.release()
+    ffmpeg_proc.stdin.close()
+    ffmpeg_proc.wait()
     if os.path.exists(tmp_preproc):
         os.remove(tmp_preproc)
     print(f"완료! 저장 위치: {output_path}")

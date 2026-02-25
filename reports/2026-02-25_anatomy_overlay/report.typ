@@ -39,10 +39,13 @@
 [2패스] MediaPipe 관절각도 → OpenSim 좌표 매핑 → pyopensim FK
         → 단일 PyVista Plotter.clear() 재사용 → VTP 뼈 배치 렌더링
             ↓
-[3패스] np.hstack([원본, 오버레이, VTP]) → MP4 출력
+[3패스] np.hstack([원본, 오버레이, VTP]) → H.264 ffmpeg 파이프 출력
 ```
 
-핵심 설계: PyVista Plotter를 매 프레임 생성·삭제하지 않고, *단일 인스턴스*에 `pl.clear()`를 반복 호출하여 SIGABRT 충돌 방지.
+핵심 설계:
+- PyVista Plotter를 매 프레임 생성·삭제하지 않고, *단일 인스턴스*에 `pl.clear()`를 반복 호출하여 SIGABRT 충돌 방지
+- `cv2.VideoWriter(mp4v)` 대신 *ffmpeg 파이프*로 H.264 직접 인코딩 → 재생 호환성 확보
+- `pelvis_ty` MediaPipe 랜드마크 기반 동적 계산 → 상체·하체 연결 보정
 
 = MediaPipe → OpenSim 좌표 매핑
 
@@ -55,7 +58,21 @@
   [`ankle_angle_r/l`], [`radians(90 - calc_angle(knee,ankle,foot))`],
   [`arm_flex_r/l`], [`radians(180 - calc_angle(hip,shoulder,elbow))`],
   [`elbow_flex_r/l`], [`radians(180 - calc_angle(shoulder,elbow,wrist))`],
-  [`pelvis_ty`], [1.0m 고정 (시각화용)],
+  [`pelvis_ty`], [동적 계산: MediaPipe 발목·힙 Y 비율 기반 (≈0.9m 스케일)],
+)
+
+= 버그 수정 내역
+
+#table(
+  columns: (auto, 1fr, auto),
+  inset: 8pt,
+  align: (center, left, center),
+  [*\#*], [*수정 내용*], [*결과*],
+  [B1], [SIGABRT 충돌: 프레임마다 Plotter 생성 → 단일 인스턴스 재사용], [✅ 해결],
+  [B2], [Vec3 접근 오류: `pos.get(r)` → `pos[r]` 인덱스 방식], [✅ 해결],
+  [B3], [RGB/BGR 불일치: PyVista 스크린샷 → `cv2.COLOR_RGB2BGR` 변환], [✅ 해결],
+  [B4], [mp4v 코덱 재생 불가 → ffmpeg 파이프 H.264 직접 인코딩], [✅ 해결],
+  [B5], [VTP 뼈 분리: `pelvis_ty=1.0` 고정 → MediaPipe 기반 동적 계산], [✅ 해결],
 )
 
 = 테스트 결과
@@ -70,7 +87,8 @@
   [3], [pyopensim FK 좌표 계산 (매 프레임)], [✅ PASS],
   [4], [PyVista VTP 뼈 배치 렌더링 (단일 Plotter)], [✅ PASS],
   [5], [원본+오버레이+VTP 3패널 결합 (5760×1080)], [✅ PASS],
-  [6], [출력 MP4 생성], [✅ PASS],
+  [6], [H.264 출력 MP4 생성 (ffmpeg 파이프)], [✅ PASS],
+  [7], [동영상 플레이어 재생 호환성 확인], [✅ PASS],
 )
 
 = 출력 정보
@@ -81,7 +99,7 @@
   [출력 해상도], [5760×1080 (1920×3 패널)],
   [FPS], [60fps],
   [총 프레임], [1,019],
-  [파일 크기], [114 MB],
+  [파일 크기], [19 MB (H.264, CRF 23)],
   [출력 경로], [`my_data/2026_02_25/IMG_2633_anatomy.mp4`],
   [VTP 렌더 속도], [~1.3초/프레임 → 약 22분 (배치)],
 )
@@ -108,13 +126,12 @@
 - VTP 뼈 형상(대퇴골, 경골, 비골, 족골, 골반, 흉곽, 상완골 등) 렌더링 정상
 - 자세 변화에 따른 하지 각도 변화 반영 확인
 - 패널2 관절 각도 수치(무릎·고관절·발목) 실시간 표시
+- H.264 인코딩으로 범용 플레이어 재생 확인
+- `pelvis_ty` 동적 계산으로 상체·하체 골격 연결 개선
 
 == 알려진 이슈
-- *VTP 뼈 분리*: 골반 `pelvis_ty=1.0` 고정값으로 인해 상체-하체 간격이 분리되어 보임
-  → 개선: MediaPipe 랜드마크 기반 pelvis_ty 동적 계산 필요
 - *VTP 렌더 속도*: ~1.3초/프레임 → 실시간 불가, 배치 전처리 방식 유지
 
 = 다음 단계
 - 이슈 \#3: 패널3에 근육 경로 + 활성도 색상 추가
-- `pelvis_ty` 동적 계산으로 상체-하체 연결 보정
 - 발레 동작 영상 추가 테스트
