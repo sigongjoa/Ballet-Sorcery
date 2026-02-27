@@ -122,27 +122,35 @@ def landmarks_to_opensim_coords(landmarks, world_lm=None):
     raw = {
         'pelvis_tilt': 0.0, 'pelvis_list': 0.0, 'pelvis_rotation': 0.0,
         'pelvis_tx': 0.0, 'pelvis_ty': 0.9, 'pelvis_tz': 0.0,
-        # 무릎: Rajagopal -120°~10° → soft saturation
-        'knee_angle_r': snorm(math.radians(calc_angle(rh, rk, ra) - 180), -2.0, 0.17),
-        'knee_angle_l': snorm(math.radians(calc_angle(lh, lk, la) - 180), -2.0, 0.17),
-        # 힙: -30°~120°
+        # ── 무릎: 모델 범위 [0°, 155°] (양수=굴곡) ──────────────────────────
+        # FIX: 180 - angle (이전: angle - 180 → 음수 → 범위 밖 → 항상 0°)
+        # 직선: 180-180=0°, 굴곡90°: 180-90=90° → 모두 양수, 범위 내
+        'knee_angle_r': snorm(math.radians(180 - calc_angle(rh, rk, ra)), 0.0, 2.7),
+        'knee_angle_l': snorm(math.radians(180 - calc_angle(lh, lk, la)), 0.0, 2.7),
+        # ── 힙 굴곡: [-30°, 120°] ───────────────────────────────────────────
         'hip_flexion_r': snorm(math.radians(180 - calc_angle(shoulder_mid, rh, rk)), -0.52, 2.09),
         'hip_flexion_l': snorm(math.radians(180 - calc_angle(shoulder_mid, lh, lk)), -0.52, 2.09),
-        # 발목: -70°~40°
+        # ── 발목: [-70°, 40°] ───────────────────────────────────────────────
         'ankle_angle_r': snorm(math.radians(90 - calc_angle(rk, ra, rf)), -1.0, 0.6),
         'ankle_angle_l': snorm(math.radians(90 - calc_angle(lk, la, lf)), -1.0, 0.6),
-        # 힙 내전/외전: 정상 자세에서만 계산 (점프 시 기하 붕괴 → 0 설정)
-        # atan2(lateral_X, vertical_Y) → frontal-plane angle
-        # is_jump 아닐 때 thigh_r[1] > 0.05 보장 → denominator 양수
+        # ── 힙 내전/외전 ─────────────────────────────────────────────────────
         'hip_adduction_r': snorm(
             math.atan2(thigh_r[0], max(thigh_r[1], 0.05)), -0.87, 0.35) if not is_jump else 0.0,
         'hip_adduction_l': snorm(
             math.atan2(-thigh_l[0], max(thigh_l[1], 0.05)), -0.87, 0.35) if not is_jump else 0.0,
-        # 팔·팔꿈치
-        'arm_flex_r': snorm(math.radians(180 - calc_angle(rh, rs, re)), -0.5, 2.5),
-        'arm_flex_l': snorm(math.radians(180 - calc_angle(lh, ls, le)), -0.5, 2.5),
-        'elbow_flex_r': snorm(math.radians(180 - calc_angle(rs, re, rw)), -0.1, 2.5),
-        'elbow_flex_l': snorm(math.radians(180 - calc_angle(ls, le, lw)), -0.1, 2.5),
+        # ── 팔 굴곡: [-90°, 90°] ────────────────────────────────────────────
+        # arm_flex = angle(체간하강벡터, 상완벡터) @ 어깨
+        #   팔 아래 ≈ 0-30°, 수평 ≈ 90°, 머리위 ≈ 150°
+        'arm_flex_r': snorm(math.radians(calc_angle(rh, rs, re)), -0.5, 2.5),
+        'arm_flex_l': snorm(math.radians(calc_angle(lh, ls, le)), -0.5, 2.5),
+        # FIX: arm_add 명시적 0° 설정 (모델 기본값 -90° = T포즈 override)
+        # 안 설정하면 팔이 항상 T포즈로 고정되어 arm_flex 효과 1/30로 감소
+        'arm_add_r': 0.0,
+        'arm_add_l': 0.0,
+        # ── 팔꿈치: [0°, 150°] ──────────────────────────────────────────────
+        # FIX: snorm 범위 [-0.1, 2.5] → [0.0, 2.6] (모델 범위에 맞춤)
+        'elbow_flex_r': snorm(math.radians(180 - calc_angle(rs, re, rw)), 0.0, 2.6),
+        'elbow_flex_l': snorm(math.radians(180 - calc_angle(ls, le, lw)), 0.0, 2.6),
     }
 
     # EMA 시간 평탄화: 점프 시 α=0.25 (이전 75% 유지), 평상시 α=0.6
@@ -234,7 +242,8 @@ def prerender_vtp_frames(all_landmarks, all_world_landmarks, model, state):
                         for mesh in meshes:
                             pl.add_mesh(mesh.transform(T, inplace=False),
                                         color=body_color(bname), smooth_shading=True)
-                    pl.camera_position = [(0, 1, 3), (0, 0.8, 0), (0, 1, 0)]
+                    # 3/4 사선 뷰: 정면+측면 동시 관찰 → 무릎 굴곡(시상면) + 팔 동작 모두 표시
+                    pl.camera_position = [(1.8, 1.2, 2.5), (0, 0.8, 0), (0, 1, 0)]
                     img = pl.screenshot(None, return_img=True)
                     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                     results.append(cv2.resize(img_bgr, (width, height)))
