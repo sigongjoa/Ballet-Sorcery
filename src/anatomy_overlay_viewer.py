@@ -119,12 +119,31 @@ def landmarks_to_opensim_coords(landmarks, world_lm=None):
         half = (hi - lo) / 2.0
         return center + half * math.tanh((val - center) / half)
 
+    # ── 팔 방향벡터 분해: 시상면(YZ) + 관상면(XY) ──────────────────────────
+    # calc_angle은 크기(스칼라)만 → 방향 정보 손실 → 좌우 팔 구분 불가
+    # 댄서가 카메라를 등지고 서있음: X=카메라우=댄서왼쪽, Y=아래, Z=카메라쪽=댄서뒤
+    #   arm_flex (시상면): 댄서 전방(-Z) 들기=양수  →  atan2(-uz, uy)
+    #   arm_add  (관상면): 우팔 외전(댄서오른쪽=-X)=음수  →  atan2(-ux, uy)
+    #                      좌팔 외전(댄서왼쪽=+X) =음수  →  atan2(+ux, uy)
+    def _arm_flex_add(shoulder, elbow, side='r'):
+        u = elbow - shoulder
+        n = np.linalg.norm(u)
+        if n < 1e-6:
+            return 0.0, 0.0
+        u = u / n
+        flex = math.atan2(-u[2], max(u[1], 0.01))   # 시상면 굴곡
+        add  = math.atan2(-u[0], max(u[1], 0.01)) if side == 'r' \
+               else math.atan2(u[0], max(u[1], 0.01))  # 관상면 외전 (좌우 반전)
+        return flex, add
+
+    flex_r, add_r = _arm_flex_add(rs, re, 'r')
+    flex_l, add_l = _arm_flex_add(ls, le, 'l')
+
     raw = {
         'pelvis_tilt': 0.0, 'pelvis_list': 0.0, 'pelvis_rotation': 0.0,
         'pelvis_tx': 0.0, 'pelvis_ty': 0.9, 'pelvis_tz': 0.0,
         # ── 무릎: 모델 범위 [0°, 155°] (양수=굴곡) ──────────────────────────
         # FIX: 180 - angle (이전: angle - 180 → 음수 → 범위 밖 → 항상 0°)
-        # 직선: 180-180=0°, 굴곡90°: 180-90=90° → 모두 양수, 범위 내
         'knee_angle_r': snorm(math.radians(180 - calc_angle(rh, rk, ra)), 0.0, 2.7),
         'knee_angle_l': snorm(math.radians(180 - calc_angle(lh, lk, la)), 0.0, 2.7),
         # ── 힙 굴곡: [-30°, 120°] ───────────────────────────────────────────
@@ -138,17 +157,13 @@ def landmarks_to_opensim_coords(landmarks, world_lm=None):
             math.atan2(thigh_r[0], max(thigh_r[1], 0.05)), -0.87, 0.35) if not is_jump else 0.0,
         'hip_adduction_l': snorm(
             math.atan2(-thigh_l[0], max(thigh_l[1], 0.05)), -0.87, 0.35) if not is_jump else 0.0,
-        # ── 팔 굴곡: [-90°, 90°] ────────────────────────────────────────────
-        # arm_flex = angle(체간하강벡터, 상완벡터) @ 어깨
-        #   팔 아래 ≈ 0-30°, 수평 ≈ 90°, 머리위 ≈ 150°
-        'arm_flex_r': snorm(math.radians(calc_angle(rh, rs, re)), -0.5, 2.5),
-        'arm_flex_l': snorm(math.radians(calc_angle(lh, ls, le)), -0.5, 2.5),
-        # FIX: arm_add 명시적 0° 설정 (모델 기본값 -90° = T포즈 override)
-        # 안 설정하면 팔이 항상 T포즈로 고정되어 arm_flex 효과 1/30로 감소
-        'arm_add_r': 0.0,
-        'arm_add_l': 0.0,
+        # ── 팔: 시상면(flex) + 관상면(add) 독립 분해 ────────────────────────
+        # 방향벡터(shoulder→elbow)를 YZ/XY 평면으로 각각 투영 → 좌우팔 방향 구분
+        'arm_flex_r': snorm(flex_r, -0.5, 2.5),
+        'arm_flex_l': snorm(flex_l, -0.5, 2.5),
+        'arm_add_r':  snorm(add_r,  -2.09, 1.22),
+        'arm_add_l':  snorm(add_l,  -2.09, 1.22),
         # ── 팔꿈치: [0°, 150°] ──────────────────────────────────────────────
-        # FIX: snorm 범위 [-0.1, 2.5] → [0.0, 2.6] (모델 범위에 맞춤)
         'elbow_flex_r': snorm(math.radians(180 - calc_angle(rs, re, rw)), 0.0, 2.6),
         'elbow_flex_l': snorm(math.radians(180 - calc_angle(ls, le, lw)), 0.0, 2.6),
     }
