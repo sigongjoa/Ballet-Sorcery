@@ -29,7 +29,7 @@ def _download_model_if_not_exists():
     else:
         print(f"모델 파일이 이미 존재합니다: {MODEL_PATH}")
 
-def extract_poses(video_path: str, output_json_path: str, target_fps: int = 24) -> dict:
+def extract_poses(video_path: str, output_json_path: str, target_fps: int = 24, max_frames: int = -1) -> dict:
     """
     영상 파일에서 MediaPipe Pose Landmarker를 사용하여 포즈 랜드마크를 추출하고 JSON 파일로 저장합니다.
 
@@ -37,6 +37,7 @@ def extract_poses(video_path: str, output_json_path: str, target_fps: int = 24) 
         video_path (str): 입력 영상 파일의 경로.
         output_json_path (str): 추출된 포즈 데이터를 저장할 JSON 파일의 경로.
         target_fps (int): 포즈 데이터를 추출할 목표 프레임 속도.
+        max_frames (int): 처리할 최대 프레임 수 (-1이면 전체 영상).
 
     Returns:
         dict: 추출된 포즈 데이터가 담긴 딕셔너리.
@@ -97,6 +98,10 @@ def extract_poses(video_path: str, output_json_path: str, target_fps: int = 24) 
     POSE_LANDMARK_NAMES = [name for name, _ in PoseLandmark.__members__.items()]
 
     while cap.isOpened():
+        if max_frames > 0 and processed_frame_idx >= max_frames:
+            print(f"최대 프레임 수({max_frames})에 도달하여 추출을 종료합니다.")
+            break
+            
         ret, frame = cap.read()
         if not ret:
             break

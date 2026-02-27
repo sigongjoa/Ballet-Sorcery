@@ -25,41 +25,21 @@ def get_trc_time_range(trc_path):
         with open(trc_path, 'r') as f:
             lines = f.readlines()
 
-        # 데이터 첫 행 찾기: Frame#(정수) + Time(실수) 패턴
-        first_data_line = None
-        for line in lines:
-            parts = line.strip().split('\t')
-            if len(parts) >= 2:
-                try:
-                    frame_num = float(parts[0])
-                    time_val = float(parts[1])
-                    # Frame# 는 양의 정수여야 함 (DataRate 행 제외)
-                    if frame_num == int(frame_num) and frame_num >= 1 and time_val >= 0:
-                        first_data_line = parts
-                        break
-                except ValueError:
-                    continue
-
-        if first_data_line is None:
+        # 데이터 행 찾기: 6번째 줄(index 5)부터 실제 데이터가 시작됨 (헤더 5줄 가정)
+        # 하지만 더 견고하게 하기 위해 'Frame#' 문자열 이후의 첫 숫자를 찾음
+        data_start_idx = 0
+        for i, line in enumerate(lines):
+            if line.startswith('Frame#'):
+                data_start_idx = i + 2 # Frame# \n X1 Y1... \n [DATA]
+                break
+        
+        data_lines = [l.strip().split('\t') for l in lines[data_start_idx:] if l.strip()]
+        if not data_lines:
             return 0.0, 1.0
 
-        start_time = float(first_data_line[1])
-
-        # 마지막 데이터 행 찾기 (역방향)
-        last_data_line = None
-        for line in reversed(lines):
-            parts = line.strip().split('\t')
-            if len(parts) >= 2:
-                try:
-                    frame_num = float(parts[0])
-                    time_val = float(parts[1])
-                    if frame_num == int(frame_num) and frame_num >= 1 and time_val >= 0:
-                        last_data_line = parts
-                        break
-                except ValueError:
-                    continue
-
-        end_time = float(last_data_line[1]) if last_data_line else start_time + 1.0
+        start_time = float(data_lines[0][1])
+        end_time = float(data_lines[-1][1])
+        
         return start_time, end_time
     except Exception as e:
         logger.error(f"Error extracting time range from TRC: {e}")
@@ -75,61 +55,66 @@ def run_scaling(trc_path, output_dir, subject_mass_kg=60.0, subject_height_m=1.7
             os.makedirs(output_dir)
 
         scaled_model_path = os.path.abspath(os.path.join(output_dir, "scaled_model.osim"))
-        temp_xml_path = os.path.join(output_dir, "temp_scaling_setup.xml")
-        
-        # Load and modify XML
-        tree = ET.parse(SCALING_TEMPLATE)
-        root = tree.getroot()
-        scale_tool = root.find('ScaleTool')
-        
-        # Set mass and height
-        scale_tool.find('mass').text = str(subject_mass_kg)
-        scale_tool.find('height').text = str(subject_height_m * 1000) # mm
-        
-        # Set GenericModelMaker
-        gmm = scale_tool.find('GenericModelMaker')
-        model_to_use = DEFAULT_MODEL_SIMPLE if use_simple_model else DEFAULT_MODEL
-        gmm.find('model_file').text = model_to_use
-        gmm.find('marker_set_file').text = DEFAULT_MARKER_SET
-        
-        # TRC 파일을 output_dir로 복사하여 경로 충돌 방지
-        # OpenSim ScaleTool은 XML 파일 기준 상대경로 또는 절대경로를 처리하는데
-        # 간혹 디렉토리 중복 문제가 발생 → 같은 디렉토리에 두면 안전
-        import shutil
-        trc_basename = os.path.basename(trc_path)
-        trc_in_outdir = os.path.join(output_dir, trc_basename)
-        if os.path.abspath(trc_path) != os.path.abspath(trc_in_outdir):
-            shutil.copy2(trc_path, trc_in_outdir)
-        trc_rel = trc_basename  # XML 기준 상대 경로
+        # [FIX] 한글/특수문자 경로 포함 시 OpenSim XML 파서 오작동 가능성
+        # 시스템 임시 디렉토리(ASCII)를 사용하여 스케일링 수행 후 결과만 복사
+        with tempfile.TemporaryDirectory() as temp_run_dir:
+            temp_xml_path = os.path.join(temp_run_dir, "scaling_setup.xml")
+            
+            # TRC 파일을 임시 디렉토리로 복사
+            temp_trc_path = os.path.join(temp_run_dir, "input.trc")
+            import shutil
+            shutil.copy2(trc_path, temp_trc_path)
 
-        # Set ModelScaler
-        ms = scale_tool.find('ModelScaler')
-        ms.find('marker_file').text = trc_rel
-        ms.find('output_model_file').text = "scaled_model.osim"
-        
-        # Time range for scaling
-        start_t, end_t = get_trc_time_range(trc_path)
-        # Use a small window (e.g., first 0.2s) for static scaling if available
-        scaling_end = min(start_t + 0.2, end_t)
-        ms.find('time_range').text = f"{start_t} {scaling_end}"
-        
-        # Disable MarkerPlacer for now (as per Pose2Sim default scaling)
-        mp = scale_tool.find('MarkerPlacer')
-        if mp is not None:
-            mp.find('apply').text = 'false'
+            # Load and modify XML
+            tree = ET.parse(SCALING_TEMPLATE)
+            root = tree.getroot()
+            scale_tool = root.find('ScaleTool')
+            
+            # Set mass and height
+            scale_tool.find('mass').text = str(subject_mass_kg)
+            scale_tool.find('height').text = str(subject_height_m * 1000) # mm
+            
+            # Set GenericModelMaker
+            gmm = scale_tool.find('GenericModelMaker')
+            model_to_use = DEFAULT_MODEL_SIMPLE if use_simple_model else DEFAULT_MODEL
+            gmm.find('model_file').text = model_to_use
+            gmm.find('marker_set_file').text = DEFAULT_MARKER_SET
+            
+            # Set ModelScaler
+            ms = scale_tool.find('ModelScaler')
+            ms.find('marker_file').text = "input.trc"
+            ms.find('output_model_file').text = "output_scaled.osim"
+            
+            # Time range for scaling
+            start_t, end_t = get_trc_time_range(temp_trc_path)
+            scaling_end = min(start_t + 0.2, end_t)
+            ms.find('time_range').text = f"{start_t} {scaling_end}"
+            
+            # Disable MarkerPlacer
+            mp = scale_tool.find('MarkerPlacer')
+            if mp is not None:
+                mp.find('apply').text = 'false'
 
-        tree.write(temp_xml_path)
-        
-        logger.info(f"Running ScaleTool with {temp_xml_path}")
-        scaler = tools.ScaleTool(temp_xml_path)
-        scaler.run()
-        
-        if os.path.exists(scaled_model_path):
-            logger.info(f"Scaling successful: {scaled_model_path}")
-            return scaled_model_path
-        else:
-            logger.warning("Scaling failed to produce output model. Falling back to default model.")
-            return DEFAULT_MODEL
+            tree.write(temp_xml_path)
+            
+            logger.info(f"Running ScaleTool in {temp_run_dir}")
+            scaler = tools.ScaleTool(temp_xml_path)
+            # OpenSim 툴 실행 시 작업 디렉토리 변경 (C++ 내부 경로 처리 호환성)
+            old_cwd = os.getcwd()
+            os.chdir(temp_run_dir)
+            try:
+                scaler.run()
+            finally:
+                os.chdir(old_cwd)
+            
+            temp_output = os.path.join(temp_run_dir, "output_scaled.osim")
+            if os.path.exists(temp_output):
+                shutil.copy2(temp_output, scaled_model_path)
+                logger.info(f"Scaling successful: {scaled_model_path}")
+                return scaled_model_path
+            else:
+                logger.warning("Scaling failed to produce output model.")
+                return DEFAULT_MODEL
             
     except Exception as e:
         logger.error(f"Error during scaling: {e}")
@@ -146,46 +131,51 @@ def run_ik(trc_path, scaled_model_path, output_dir, fps=30.0):
             
         trc_name = os.path.basename(trc_path).replace(".trc", "")
         mot_path = os.path.abspath(os.path.join(output_dir, f"{trc_name}_ik.mot"))
-        temp_xml_path = os.path.join(output_dir, "temp_ik_setup.xml")
         
-        # Load and modify XML
-        tree = ET.parse(IK_TEMPLATE)
-        root = tree.getroot()
-        ik_tool = root.find('InverseKinematicsTool')
-        
-        # TRC를 output_dir에 복사 (경로 중복 방지)
-        import shutil
-        trc_basename = os.path.basename(trc_path)
-        trc_in_outdir = os.path.join(output_dir, trc_basename)
-        if os.path.abspath(trc_path) != os.path.abspath(trc_in_outdir):
-            shutil.copy2(trc_path, trc_in_outdir)
+        with tempfile.TemporaryDirectory() as temp_run_dir:
+            temp_xml_path = os.path.join(temp_run_dir, "ik_setup.xml")
+            temp_trc_path = os.path.join(temp_run_dir, "input.trc")
+            temp_model_path = os.path.join(temp_run_dir, "model.osim")
+            import shutil
+            shutil.copy2(trc_path, temp_trc_path)
+            shutil.copy2(scaled_model_path, temp_model_path)
 
-        # IK XML에는 상대 경로 사용 (temp_xml_path 기준)
-        mot_name = f"{trc_name}_ik.mot"
-        ik_tool.find('results_directory').text = "."
-        ik_tool.find('model_file').text = os.path.abspath(scaled_model_path)
-        ik_tool.find('marker_file').text = trc_basename
-        ik_tool.find('output_motion_file').text = mot_name
+            # Load and modify XML
+            tree = ET.parse(IK_TEMPLATE)
+            root = tree.getroot()
+            ik_tool = root.find('InverseKinematicsTool')
+            
+            ik_tool.find('results_directory').text = "."
+            ik_tool.find('model_file').text = "model.osim"
+            ik_tool.find('marker_file').text = "input.trc"
+            ik_tool.find('output_motion_file').text = "output_ik.mot"
 
-        # Time range from TRC
-        start_t, end_t = get_trc_time_range(trc_in_outdir)
-        ik_tool.find('time_range').text = f"{start_t} {end_t}"
+            # Time range from TRC
+            start_t, end_t = get_trc_time_range(temp_trc_path)
+            ik_tool.find('time_range').text = f"{start_t} {end_t}"
 
-        tree.write(temp_xml_path)
+            tree.write(temp_xml_path)
 
-        logger.info(f"Running IKTool with {temp_xml_path}")
-        ik = tools.InverseKinematicsTool(temp_xml_path)
-        ik.setStartTime(start_t)
-        ik.setEndTime(end_t)
-        
-        ik.run()
-        
-        if os.path.exists(mot_path):
-            logger.info(f"IK successful: {mot_path}")
-            return mot_path
-        else:
-            logger.error("IK failed to produce output motion file.")
-            return None
+            logger.info(f"Running IKTool in {temp_run_dir}")
+            ik = tools.InverseKinematicsTool(temp_xml_path)
+            ik.setStartTime(start_t)
+            ik.setEndTime(end_t)
+            
+            old_cwd = os.getcwd()
+            os.chdir(temp_run_dir)
+            try:
+                ik.run()
+            finally:
+                os.chdir(old_cwd)
+            
+            temp_output = os.path.join(temp_run_dir, "output_ik.mot")
+            if os.path.exists(temp_output):
+                shutil.copy2(temp_output, mot_path)
+                logger.info(f"IK successful: {mot_path}")
+                return mot_path
+            else:
+                logger.error("IK failed to produce output motion file.")
+                return None
             
     except Exception as e:
         logger.error(f"Error during IK: {e}")

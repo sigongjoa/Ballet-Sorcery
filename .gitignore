@@ -45,3 +45,6 @@ reports/test_output.json
 
 # Gemini 대화 (불필요)
 google_gemini*/
+my_data/
+reports/joint_analysis_result/
+reports/*.png
