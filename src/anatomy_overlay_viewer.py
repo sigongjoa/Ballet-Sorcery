@@ -6,6 +6,7 @@ import os
 import argparse
 import subprocess
 import math
+os.environ.setdefault('PYVISTA_OFF_SCREEN', 'true')  # Xvfb 대신 EGL 오프스크린 (GPU)
 import pyvista as pv
 from tqdm import tqdm
 from typing import Optional, List, Dict
@@ -47,7 +48,8 @@ POSE_CONNECTIONS = [
     (27,29),(28,30),(29,31),(30,32),(27,31),(28,32),
 ]
 
-pv.start_xvfb()
+# EGL 오프스크린 모드 사용 (PYVISTA_OFF_SCREEN=true → Xvfb 불필요)
+# pv.start_xvfb()  # 소프트웨어 렌더링 → EGL GPU 렌더링으로 전환
 
 
 def calc_angle(p1, vertex, p2):
@@ -59,6 +61,10 @@ def calc_angle(p1, vertex, p2):
     return math.degrees(math.acos(np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)))
 
 
+# EMA 상태 (프레임 간 시간 평탄화)
+_prev_coords: dict = {}
+
+
 def body_color(name):
     if name in LOWER: return '#4488ff'
     if name in UPPER: return '#ff8844'
@@ -66,10 +72,21 @@ def body_color(name):
     return '#c0c0c0'
 
 
-def landmarks_to_opensim_coords(landmarks):
-    """MediaPipe 랜드마크 → OpenSim 좌표 (라디안) 매핑."""
-    def pt(i):
-        return np.array([landmarks[i].x, landmarks[i].y, landmarks[i].z])
+def landmarks_to_opensim_coords(landmarks, world_lm=None):
+    """MediaPipe 랜드마크 → OpenSim 좌표 (라디안) 매핑.
+
+    world_lm (pose_world_landmarks): 미터 단위 진짜 3D 좌표, Z 안정적.
+      - 없으면 normalized landmarks의 Z=0 처리(2D 투영)로 대체.
+    hip_flexion: 어깨 단일점 대신 양쪽 어깨 중점(body axis) 기준
+      → 팔 동작에 의한 오염 제거.
+    """
+    # 각도 계산용 소스: world_lm 우선, 없으면 XY만 사용(Z=0 → 노이즈 차단)
+    if world_lm is not None:
+        def pt(i):
+            return np.array([world_lm[i].x, world_lm[i].y, world_lm[i].z])
+    else:
+        def pt(i):
+            return np.array([landmarks[i].x, landmarks[i].y, 0.0])
 
     lh, rh = pt(23), pt(24)
     lk, rk = pt(25), pt(26)
@@ -79,29 +96,65 @@ def landmarks_to_opensim_coords(landmarks):
     lw, rw = pt(15), pt(16)
     lf, rf = pt(31), pt(32)
 
-    # pelvis_ty: 발목(가장 낮은 점)을 바닥(y=0)으로 기준,
-    # OpenSim Y-UP / MediaPipe Y-DOWN → 골반 높이 = |hip_y - ankle_y| * 신체스케일
-    ankle_y_mp = (la[1] + ra[1]) / 2.0   # MediaPipe Y-DOWN (클수록 낮음)
-    hip_y_mp   = (lh[1] + rh[1]) / 2.0
-    # 신체 비율: 발목→골반 거리 (MediaPipe 정규화 단위) → OpenSim 미터 (약 1m 신장 기준)
-    hip_ankle_ratio = max(abs(hip_y_mp - ankle_y_mp), 0.1)
-    body_scale = 0.9 / hip_ankle_ratio   # 발목→골반 ≈ 0.9m
-    pelvis_ty = hip_ankle_ratio * body_scale  # ≈ 0.9m 고정되지만 비율 유지
+    # hip_flexion 기준: 어깨 중점 (팔 동작에 무관)
+    shoulder_mid = (ls + rs) / 2.0
+    pelvis_mid   = (lh + rh) / 2.0
 
-    coords = {
+    # 대퇴 벡터 (hip→knee, world_lm Y-DOWN)
+    # dancer faces AWAY: world_lm +X = dancer LEFT
+    # → right leg adduction = knee toward dancer's left = +X
+    # → left  leg adduction = knee toward dancer's right = -X
+    thigh_r = rk - rh
+    thigh_l = lk - lh
+    # 점프 감지: 무릎이 힙 근처 또는 위 (Y-DOWN에서 thigh Y < 0.05)
+    # → 대퇴 벡터 기하 붕괴 → hip_adduction 비활성, EMA 강화
+    is_jump = (thigh_r[1] < 0.05) or (thigh_l[1] < 0.05)
+
+    def snorm(val, lo, hi):
+        """Soft normalization: tanh 기반 smooth saturation.
+        범위 내 값은 거의 그대로 통과, 범위 초과 값은 부드럽게 포화.
+        하드 클램핑처럼 특정 값에서 딱 멈추는 현상 없음.
+        """
+        center = (lo + hi) / 2.0
+        half = (hi - lo) / 2.0
+        return center + half * math.tanh((val - center) / half)
+
+    raw = {
         'pelvis_tilt': 0.0, 'pelvis_list': 0.0, 'pelvis_rotation': 0.0,
-        'pelvis_tx': 0.0, 'pelvis_ty': float(pelvis_ty), 'pelvis_tz': 0.0,
-        'knee_angle_r': math.radians(calc_angle(rh, rk, ra) - 180),
-        'knee_angle_l': math.radians(calc_angle(lh, lk, la) - 180),
-        'hip_flexion_r': math.radians(180 - calc_angle(rs, rh, rk)),
-        'hip_flexion_l': math.radians(180 - calc_angle(ls, lh, lk)),
-        'ankle_angle_r': math.radians(90 - calc_angle(rk, ra, rf)),
-        'ankle_angle_l': math.radians(90 - calc_angle(lk, la, lf)),
-        'arm_flex_r': math.radians(180 - calc_angle(rh, rs, re)),
-        'arm_flex_l': math.radians(180 - calc_angle(lh, ls, le)),
-        'elbow_flex_r': math.radians(180 - calc_angle(rs, re, rw)),
-        'elbow_flex_l': math.radians(180 - calc_angle(ls, le, lw)),
+        'pelvis_tx': 0.0, 'pelvis_ty': 0.9, 'pelvis_tz': 0.0,
+        # 무릎: Rajagopal -120°~10° → soft saturation
+        'knee_angle_r': snorm(math.radians(calc_angle(rh, rk, ra) - 180), -2.0, 0.17),
+        'knee_angle_l': snorm(math.radians(calc_angle(lh, lk, la) - 180), -2.0, 0.17),
+        # 힙: -30°~120°
+        'hip_flexion_r': snorm(math.radians(180 - calc_angle(shoulder_mid, rh, rk)), -0.52, 2.09),
+        'hip_flexion_l': snorm(math.radians(180 - calc_angle(shoulder_mid, lh, lk)), -0.52, 2.09),
+        # 발목: -70°~40°
+        'ankle_angle_r': snorm(math.radians(90 - calc_angle(rk, ra, rf)), -1.0, 0.6),
+        'ankle_angle_l': snorm(math.radians(90 - calc_angle(lk, la, lf)), -1.0, 0.6),
+        # 힙 내전/외전: 정상 자세에서만 계산 (점프 시 기하 붕괴 → 0 설정)
+        # atan2(lateral_X, vertical_Y) → frontal-plane angle
+        # is_jump 아닐 때 thigh_r[1] > 0.05 보장 → denominator 양수
+        'hip_adduction_r': snorm(
+            math.atan2(thigh_r[0], max(thigh_r[1], 0.05)), -0.87, 0.35) if not is_jump else 0.0,
+        'hip_adduction_l': snorm(
+            math.atan2(-thigh_l[0], max(thigh_l[1], 0.05)), -0.87, 0.35) if not is_jump else 0.0,
+        # 팔·팔꿈치
+        'arm_flex_r': snorm(math.radians(180 - calc_angle(rh, rs, re)), -0.5, 2.5),
+        'arm_flex_l': snorm(math.radians(180 - calc_angle(lh, ls, le)), -0.5, 2.5),
+        'elbow_flex_r': snorm(math.radians(180 - calc_angle(rs, re, rw)), -0.1, 2.5),
+        'elbow_flex_l': snorm(math.radians(180 - calc_angle(ls, le, lw)), -0.1, 2.5),
     }
+
+    # EMA 시간 평탄화: 점프 시 α=0.25 (이전 75% 유지), 평상시 α=0.6
+    # 점프 프레임 FK 발산을 이전 안정 프레임으로 강하게 끌어당김
+    global _prev_coords
+    EMA_ALPHA = 0.25 if is_jump else 0.6
+    if _prev_coords:
+        coords = {k: EMA_ALPHA * v + (1 - EMA_ALPHA) * _prev_coords.get(k, v)
+                  for k, v in raw.items()}
+    else:
+        coords = raw
+    _prev_coords = coords
     return coords
 
 
@@ -148,7 +201,7 @@ def fallback_vtp_frame(landmarks, width=1920, height=1080):
     return img
 
 
-def prerender_vtp_frames(all_landmarks, model, state):
+def prerender_vtp_frames(all_landmarks, all_world_landmarks, model, state):
     """단일 PyVista Plotter로 전체 프레임 VTP 배치 렌더링."""
     width, height = 1920, 1080
 
@@ -165,12 +218,14 @@ def prerender_vtp_frames(all_landmarks, model, state):
         pl = pv.Plotter(off_screen=True, window_size=[960, 540])
         pl.set_background('#0a0a1a')
 
-        for landmarks in tqdm(all_landmarks, desc="VTP 뼈 렌더링"):
+        for landmarks, world_lm in tqdm(
+                zip(all_landmarks, all_world_landmarks), total=len(all_landmarks),
+                desc="VTP 뼈 렌더링"):
             pl.clear()
             rendered = False
             if landmarks and model and state and cached_meshes:
                 try:
-                    coords = landmarks_to_opensim_coords(landmarks)
+                    coords = landmarks_to_opensim_coords(landmarks, world_lm)
                     bt = compute_fk(model, state, coords)
                     for bname, meshes in cached_meshes.items():
                         if bname not in bt:
@@ -268,13 +323,29 @@ def create_anatomy_video(input_mov, output_path=None):
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    options = PoseLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path=MODEL_PATH),
-        running_mode=RunningMode.IMAGE
-    )
+    # GPU delegate 우선 시도; 실패 시 CPU fallback
+    try:
+        options = PoseLandmarkerOptions(
+            base_options=BaseOptions(
+                model_asset_path=MODEL_PATH,
+                delegate=BaseOptions.Delegate.GPU,
+            ),
+            running_mode=RunningMode.IMAGE,
+        )
+        # 실제로 생성해봐야 GPU 지원 여부 확인 가능
+        _test = PoseLandmarker.create_from_options(options)
+        _test.close()
+        print("MediaPipe: GPU delegate 사용")
+    except Exception:
+        options = PoseLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=MODEL_PATH),
+            running_mode=RunningMode.IMAGE,
+        )
+        print("MediaPipe: CPU fallback")
 
     all_frames = []
     all_landmarks = []
+    all_world_landmarks = []
 
     print("1패스: MediaPipe 포즈 추출...")
     with PoseLandmarker.create_from_options(options) as landmarker:
@@ -286,13 +357,18 @@ def create_anatomy_video(input_mov, output_path=None):
             mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
             result = landmarker.detect(mp_img)
             lm = result.pose_landmarks[0] if result.pose_landmarks else None
+            # world_landmarks: 미터 단위 3D 좌표 (Z 안정적) — 각도 계산에 사용
+            wlm = result.pose_world_landmarks[0] if result.pose_world_landmarks else None
             all_frames.append(frame)
             all_landmarks.append(lm)
+            all_world_landmarks.append(wlm)
     cap.release()
 
     # 4. 2패스: VTP 배치 렌더링
+    global _prev_coords
+    _prev_coords = {}  # EMA 상태 리셋 (새 영상 처리 시작)
     print("2패스: VTP 뼈 렌더링...")
-    vtp_frames = prerender_vtp_frames(all_landmarks, model, state)
+    vtp_frames = prerender_vtp_frames(all_landmarks, all_world_landmarks, model, state)
 
     # 5. 3패스: 3패널 결합 → ffmpeg 파이프로 H.264 직접 출력
     print("3패스: 3패널 결합 (H.264 출력)...")
