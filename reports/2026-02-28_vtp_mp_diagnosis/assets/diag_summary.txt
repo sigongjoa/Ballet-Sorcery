@@ -1,0 +1,38 @@
+=== VTP vs MediaPipe Diagnosis Summary ===
+
+Frame 100:
+  - Ordering Check: PASSED
+  - Angular Errors:
+    R-Thigh   :  22.69 deg
+    L-Thigh   :  44.83 deg
+    R-Shank   :  74.49 deg
+    L-Shank   :  16.92 deg
+    R-Arm     :  36.12 deg
+  - Frame Avg Error: 39.01 deg
+  - Frame Max Error: 74.49 deg
+
+Frame 300:
+  - Ordering Check: PASSED
+  - Angular Errors:
+    R-Thigh   :  39.97 deg
+    L-Thigh   :   9.12 deg
+    R-Shank   :  29.64 deg
+    L-Shank   :  47.60 deg
+    R-Arm     :  47.12 deg
+  - Frame Avg Error: 34.69 deg
+  - Frame Max Error: 47.60 deg
+
+Frame 600:
+  - Ordering Check: PASSED
+  - Angular Errors:
+    R-Thigh   :  60.16 deg
+    L-Thigh   :  29.37 deg
+    R-Shank   :  13.84 deg
+    L-Shank   :  24.62 deg
+    R-Arm     :  12.27 deg
+  - Frame Avg Error: 28.05 deg
+  - Frame Max Error: 60.16 deg
+
+Overall Metrics:
+  - Total Avg Error: 33.92 deg
+  - Total Max Error: 74.49 deg

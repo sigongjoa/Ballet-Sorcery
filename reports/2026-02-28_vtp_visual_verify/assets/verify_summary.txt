@@ -1,0 +1,11 @@
+--- VTP 시각적 검증 요약 ---
+대상 영상: my_data/2026_02_25/IMG_2633_anatomy.mp4
+분석 프레임 수: 5
+
+Frame 0100: VTP Active Ratio = 3.29%
+Frame 0250: VTP Active Ratio = 3.51%
+Frame 0400: VTP Active Ratio = 3.32%
+Frame 0600: VTP Active Ratio = 3.74%
+Frame 0850: VTP Active Ratio = 3.92%
+
+평균 활성 비율: 3.56%

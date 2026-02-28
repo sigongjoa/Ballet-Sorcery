@@ -47,4 +47,3 @@ reports/test_output.json
 google_gemini*/
 my_data/
 reports/joint_analysis_result/
-reports/*.png

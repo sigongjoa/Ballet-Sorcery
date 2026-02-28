@@ -1,0 +1,13 @@
+=== SMPL Fitting Precision Report ===
+Analyzed Frames: [100, 300, 600]
+
+Chain Error Comparison (degrees):
+Chain        | Prev DOF   | SMPL Fitting | Improvement
+-------------------------------------------------------
+R-Thigh      | 41.0       | 13.0         |       68.3%
+L-Thigh      | 27.8       | 12.9         |       53.4%
+R-Shank      | 39.3       | 13.8         |       64.8%
+L-Shank      | 29.7       | 14.5         |       51.1%
+R-Arm        | 31.8       | 9.0          |       71.6%
+-------------------------------------------------------
+Average      | 33.9       | 12.7         |       62.6%
