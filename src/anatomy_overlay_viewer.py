@@ -257,8 +257,15 @@ def prerender_vtp_frames(all_landmarks, all_world_landmarks, model, state):
                         for mesh in meshes:
                             pl.add_mesh(mesh.transform(T, inplace=False),
                                         color=body_color(bname), smooth_shading=True)
-                    # 3/4 사선 뷰: 정면+측면 동시 관찰 → 무릎 굴곡(시상면) + 팔 동작 모두 표시
-                    pl.camera_position = [(1.8, 1.2, 2.5), (0, 0.8, 0), (0, 1, 0)]
+                    # 동적 카메라: pelvis 중심으로 정면 뷰
+                    if 'pelvis' in bt:
+                        pelvis_pos = bt['pelvis'][0:3, 3]
+                        cam_target = pelvis_pos.tolist()
+                        cam_eye = [pelvis_pos[0], pelvis_pos[1] + 0.5, pelvis_pos[2] + 3.0]
+                        pl.camera_position = [cam_eye, cam_target, (0, 1, 0)]
+                    else:
+                        pl.camera_position = [(0, 0.9, 3.0), (0, 0.8, 0), (0, 1, 0)]
+                    pl.reset_camera()
                     img = pl.screenshot(None, return_img=True)
                     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                     results.append(cv2.resize(img_bgr, (width, height)))

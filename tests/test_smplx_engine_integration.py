@@ -36,7 +36,7 @@ def test_full_pipeline():
 
     # 3. 피팅 수행
     print("   - Running SMPLify-3D Optimization (100 iters)...")
-    verts, meta = engine.fit_frame(frame_data, num_iters=100)
+    verts, joints, meta = engine.fit_frame(frame_data, num_iters=100)
     print("   - Final Fitting Loss: " + str(round(meta['loss'], 4)))
 
     # 4. 가상 마커 추출

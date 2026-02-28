@@ -1,0 +1,26 @@
+Sample Frame: 0
+Timestamp: 0.000s
+--------------------------------------------------
+Joint Name           |    Radians |    Degrees
+--------------------------------------------------
+hip_flexion_r        |     0.4412 |      25.28 *
+knee_angle_r         |     0.5203 |      29.81 *
+hip_adduction_r      |     0.0323 |       1.85 *
+--------------------------------------------------
+ankle_angle_l        |    -0.3129 |     -17.93
+ankle_angle_r        |    -0.2957 |     -16.94
+arm_add_l            |     0.9109 |      52.19
+arm_add_r            |     0.6293 |      36.06
+arm_flex_l           |     0.1590 |       9.11
+arm_flex_r           |     0.0586 |       3.36
+elbow_flex_l         |     0.5820 |      33.35
+elbow_flex_r         |     0.5476 |      31.37
+hip_adduction_l      |    -0.0828 |      -4.75
+hip_flexion_l        |     0.3908 |      22.39
+knee_angle_l         |     0.6139 |      35.18
+pelvis_list          |     0.0000 |       0.00
+pelvis_rotation      |     0.0000 |       0.00
+pelvis_tilt          |     0.0000 |       0.00
+pelvis_tx            |     0.0000 |       0.00
+pelvis_ty            |     0.9000 |      51.57
+pelvis_tz            |     0.0000 |       0.00

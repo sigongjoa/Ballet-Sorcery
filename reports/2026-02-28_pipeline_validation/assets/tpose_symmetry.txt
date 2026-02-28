@@ -1,0 +1,35 @@
+=== SMPL T-pose Symmetry Verification Report ===
+Model Path: data/models/smpl
+--------------------------------------------------
+[A] Standard Joint Symmetry (Tolerance: 5e-3)
+Hip       : L[0.0677, -0.3147, 0.0214] | R[-0.0695, -0.3139, 0.0239] -> PASS
+Knee      : L[0.1020, -0.6899, 0.0169] | R[-0.1078, -0.6964, 0.0150] -> FAIL
+Ankle     : L[0.0884, -1.0879, -0.0268] | R[-0.0920, -1.0948, -0.0273] -> FAIL
+Shoulder  : L[0.1724, 0.2260, -0.0149] | R[-0.1752, 0.2251, -0.0197] -> PASS
+Elbow     : L[0.4320, 0.2132, -0.0424] | R[-0.4289, 0.2118, -0.0411] -> PASS
+Wrist     : L[0.6813, 0.2222, -0.0435] | R[-0.6842, 0.2196, -0.0467] -> PASS
+Foot      : L[0.1148, -1.1437, 0.0925] | R[-0.1174, -1.1430, 0.0961] -> PASS
+--------------------------------------------------
+[B] Virtual Marker Symmetry (Check Sign & Magnitude)
+ACROMION_L           vs ACROMION_R          : PASS | X_sum: -0.000055
+ANKLE_LAT_L          vs ANKLE_LAT_R         : PASS | X_sum: -0.000077
+ANKLE_MED_L          vs ANKLE_MED_R         : PASS | X_sum: -0.000077
+ASIS_L               vs ASIS_R              : FAIL(ASYMM) | X_sum: -0.001397
+ELBOW_LAT_L          vs ELBOW_LAT_R         : PASS | X_sum: -0.000034
+ELBOW_MED_L          vs ELBOW_MED_R         : PASS | X_sum: -0.000034
+GTROCHANTER_L        vs GTROCHANTER_R       : PASS | X_sum: -0.000155
+HAND_BACK_L          vs HAND_BACK_R         : PASS | X_sum: 0.000007
+HEEL_POST_L          vs HEEL_POST_R         : PASS | X_sum: -0.000011
+HUMERUS_LAT_L        vs HUMERUS_LAT_R       : PASS | X_sum: 0.000046
+ILIAC_CREST_L        vs ILIAC_CREST_R       : PASS | X_sum: 0.000033
+KNEE_LAT_L           vs KNEE_LAT_R          : PASS | X_sum: -0.000941
+KNEE_MED_L           vs KNEE_MED_R          : FAIL(ASYMM) | X_sum: -0.001047
+MIDDLE_FINGER_BASE_L vs MIDDLE_FINGER_BASE_R: PASS | X_sum: 0.000007
+MIDFOOT_UP_L         vs MIDFOOT_UP_R        : PASS | X_sum: -0.000214
+PSIS_L               vs PSIS_R              : PASS | X_sum: -0.000051
+RIB_LOW_L            vs RIB_LOW_R           : PASS | X_sum: 0.000016
+TOE_1ST_BASE_L       vs TOE_1ST_BASE_R      : PASS | X_sum: -0.000214
+TOE_5TH_BASE_L       vs TOE_5TH_BASE_R      : PASS | X_sum: -0.000214
+TOE_TIP_L            vs TOE_TIP_R           : PASS | X_sum: -0.000214
+WRIST_RAD_L          vs WRIST_RAD_R         : PASS | X_sum: 0.000009
+WRIST_ULN_L          vs WRIST_ULN_R         : PASS | X_sum: -0.000000
