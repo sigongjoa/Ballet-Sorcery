@@ -1,0 +1,3 @@
+Frame 100: 32.89 px
+Frame 300: 35.91 px
+Frame 600: 73.71 px
