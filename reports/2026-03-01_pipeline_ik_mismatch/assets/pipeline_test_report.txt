@@ -1,0 +1,45 @@
+Ballet 파이프라인 통합 검증 리포트
+============================================================
+
+검증 일시: 2026-03-01 15:46:00
+검증 프레임 수: 50
+SMPL 최적화 반복: 150iter
+
+[Step 1] SMPL 피팅
+  평균 loss: 0.089883
+  최소 loss: 0.029864
+  최대 loss: 0.622928
+  표준편차:  0.096848
+  소요 시간: 1.4분
+
+[Step 2] 가상 마커 타당성
+  실패 14건
+    frame 149: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 24.5cm, 기준 [30, 80]cm
+    frame 277: RANGE_FAIL: 무릎 간격 (KNEE_LAT_L↔KNEE_LAT_R) = 71.8cm, 기준 [3, 65]cm
+    frame 277: RANGE_FAIL: 발목 간격 (ANKLE_LAT_L↔ANKLE_LAT_R) = 114.3cm, 기준 [2, 75]cm
+    frame 375: RANGE_FAIL: 발목 간격 (ANKLE_LAT_L↔ANKLE_LAT_R) = 84.4cm, 기준 [2, 75]cm
+    frame 750: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 25.9cm, 기준 [30, 80]cm
+    frame 1233: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 24.2cm, 기준 [30, 80]cm
+    frame 1361: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 29.4cm, 기준 [30, 80]cm
+    frame 1521: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 24.9cm, 기준 [30, 80]cm
+    frame 1553: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 24.5cm, 기준 [30, 80]cm
+    frame 1681: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 27.2cm, 기준 [30, 80]cm
+    frame 1846: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 24.3cm, 기준 [30, 80]cm
+    frame 2015: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 18.8cm, 기준 [30, 80]cm
+    frame 2144: RANGE_FAIL: 발목 간격 (ANKLE_LAT_L↔ANKLE_LAT_R) = 89.1cm, 기준 [2, 75]cm
+    frame 2240: RANGE_FAIL: 좌측 몸통 길이 (ACROMION_L↔GTROCHANTER_L) = 29.3cm, 기준 [30, 80]cm
+
+[Step 3] TRC 파일 생성
+  성공: /mnt/d/progress/芭蕾呪法/reports/2026-03-01_e2e_validation/pipeline_test/pipeline_test.trc
+  크기: 78.9 KB
+
+[Step 4] OpenSim IK
+  생략 (--skip_ik)
+
+[판정]
+  PASS ✓  SMPL 피팅 loss < 0.1
+  PASS ✓  마커 해부학적 타당성 (WARN=PASS)
+  PASS ✓  TRC 생성 성공
+  PASS ✓  OpenSim IK (WARN=PASS)
+
+최종: 전체 PASS
