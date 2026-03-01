@@ -101,7 +101,7 @@ def main():
         ordered_mp_world = {name: mp_world[name] for name in MP_LANDMARK_NAMES if name in mp_world}
         
         print(f"Fitting frame {frame_idx}...")
-        vertices, joints, meta = engine.fit_frame(ordered_mp_world, num_iters=50)
+        vertices, joints, meta = engine.fit_frame(ordered_mp_world, num_iters=200)
         
         virtual_markers = mapper.extract_virtual_markers(vertices)
         

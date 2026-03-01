@@ -109,7 +109,7 @@ def process_frame(frame_idx: int, frame: np.ndarray, landmarker, engine: SMPLXEn
 
     # 3. Fit SMPL
     print(f"Fitting SMPL for frame {frame_idx}...")
-    vertices, joints, meta = engine.fit_frame(world_lms_dict, num_iters=50)
+    vertices, joints, meta = engine.fit_frame(world_lms_dict, num_iters=200)
     
     # 4. Camera Estimation using PnP (8 points)
     pnp_world = world_lms_arr[PNP_MP_INDICES]
