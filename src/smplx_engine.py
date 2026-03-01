@@ -7,7 +7,7 @@ Phase 1: 2-stage 최적화 + 발레 각도 제한 prior
 Phase 1+: VPoser v2.0 통합 (V02_05.zip)
 """
 
-import os, glob
+import os, glob, pickle
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -43,6 +43,59 @@ _BALLET_MAX_ANGLES = torch.tensor([
     1.0, 1.0,  # L_Wrist, R_Wrist
     0.5, 0.5,  # jaw, L_Eye
 ], dtype=torch.float32)
+
+
+# ── Ballet-GMM Prior (PyTorch 미분가능 구현) ─────────────────────────────────
+class _BalletGMMPrior:
+    """
+    Ballet-GMM: 손실 함수가 아닌 **warm-start 초기화** 용도.
+
+    발레 영상 body_pose 분포를 학습한 GMM에서:
+      - weighted_mean(): GMM 가중 평균 → body_pose 초기값
+      - nearest_mean(prev): 이전 프레임 body_pose와 가장 가까운 GMM 성분 평균
+                            → temporal warm-start
+    """
+    def __init__(self, gmm_path: str, device: str):
+        with open(gmm_path, 'rb') as f:
+            data = pickle.load(f, encoding='latin1')
+
+        weights = np.array(data['weights'], dtype=np.float32)   # (K,)
+        means   = np.array(data['means'],   dtype=np.float32)   # (K, D)
+        K, D = means.shape
+
+        self.weights_np = weights
+        self.means_np   = means
+        self.weights = torch.tensor(weights, device=device)     # (K,)
+        self.means   = torch.tensor(means,   device=device)     # (K, D)
+        self.D = D
+        self.device = device
+
+    def weighted_mean(self) -> torch.Tensor:
+        """GMM 가중 평균 → (1, 69) 텐서."""
+        wm = (self.weights[:, None] * self.means).sum(dim=0)    # (D,)
+        return wm.unsqueeze(0)                                   # (1, D)
+
+    def nearest_mean(self, prev_bp: np.ndarray) -> torch.Tensor:
+        """
+        이전 프레임 body_pose(numpy, 69차원)에 가장 가까운 GMM 성분 평균 반환.
+        temporal continuity warm-start용.
+        """
+        dists = np.linalg.norm(self.means_np - prev_bp[None], axis=-1)  # (K,)
+        k = np.argmin(dists)
+        return torch.tensor(self.means_np[k], device=self.device).unsqueeze(0)
+
+
+def _load_ballet_gmm(gmm_path: str, device: str):
+    """ballet_gmm.pkl 로드. 없으면 None."""
+    if not os.path.exists(gmm_path):
+        return None
+    try:
+        prior = _BalletGMMPrior(gmm_path, device)
+        print(f"[SMPLX-Engine] Ballet-GMM loaded: {gmm_path}")
+        return prior
+    except Exception as e:
+        print(f"[SMPLX-Engine] Ballet-GMM load failed: {e}")
+        return None
 
 
 # ── VPoser v2.0 Decoder (순수 PyTorch 구현) ──────────────────────────────────
@@ -170,6 +223,10 @@ class SMPLXEngine:
             else:
                 print("[SMPLX-Engine] VPoser 로드 실패 — 각도 제한 prior 사용")
 
+        # Ballet-GMM prior — ballet_gmm.pkl 존재 시 자동 로드
+        gmm_path = os.path.join(model_dir, 'ballet_gmm.pkl')
+        self.ballet_gmm = _load_ballet_gmm(gmm_path, device)
+
         # MediaPipe (33 landmarks) → SMPL joint 인덱스 매핑
         self.mp_to_smplx_idx = {
             11: 16, 12: 17,  # Shoulders
@@ -190,11 +247,16 @@ class SMPLXEngine:
 
     # ── 단일 프레임 피팅 ─────────────────────────────────────────────────────
     def fit_frame(self, mp_world_landmarks: Dict,
-                  num_iters: int = 200) -> Tuple[np.ndarray, np.ndarray, Dict]:
+                  num_iters: int = 200,
+                  prev_body_pose: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """
         2-stage SMPLify-3D.
         Stage 1 (30 iter): global_orient + transl 정렬
-        Stage 2 (170 iter): 전체 파라미터 (VPoser z or body_pose)
+        Stage 2 (170 iter): 전체 파라미터
+
+        prev_body_pose: 이전 프레임의 body_pose (np.ndarray, shape=(69,)).
+          제공 시 temporal warm-start 사용 (GMM nearest component).
+          None이면 GMM 가중 평균 또는 zeros로 초기화.
         """
         # ── 타겟 구성 ────────────────────────────────────────────────────────
         target_joints = torch.zeros(1, 45, 3, device=self.device)
@@ -213,10 +275,21 @@ class SMPLXEngine:
         transl        = torch.zeros(1, 3,  device=self.device, requires_grad=True)
 
         use_vposer = self.vposer is not None
+
+        # body_pose 초기화: GMM warm-start 우선, 없으면 zeros(T-pose)
         if use_vposer:
             z = torch.zeros(1, 32, device=self.device, requires_grad=True)
         else:
-            body_pose = torch.zeros(1, 69, device=self.device, requires_grad=True)
+            if self.ballet_gmm is not None:
+                if prev_body_pose is not None:
+                    # temporal warm-start: 이전 프레임과 가장 가까운 GMM 성분
+                    bp_init = self.ballet_gmm.nearest_mean(prev_body_pose)
+                else:
+                    # 첫 프레임: GMM 가중 평균
+                    bp_init = self.ballet_gmm.weighted_mean()
+                body_pose = bp_init.clone().detach().requires_grad_(True)
+            else:
+                body_pose = torch.zeros(1, 69, device=self.device, requires_grad=True)
 
         # ── Stage 1: global_orient + transl (T-pose 기준으로 정렬) ──────────
         s1_iters = min(30, num_iters)
@@ -249,7 +322,7 @@ class SMPLXEngine:
             opt2, T_max=max(1, s2_iters), eta_min=1e-4)
 
         total_loss = torch.tensor(0.0)
-        for _ in range(s2_iters):
+        for step in range(s2_iters):
             opt2.zero_grad()
 
             if use_vposer:
@@ -269,6 +342,7 @@ class SMPLXEngine:
             else:
                 loss_pose  = (bp ** 2).sum() * 0.005
                 loss_pose += self._angle_limit_loss(bp) * 2.0
+                # Ballet-GMM: 손실 함수 사용 안 함 — warm-start 초기화로만 활용
 
             total_loss = loss_joint + loss_shape + loss_pose
             total_loss.backward()
