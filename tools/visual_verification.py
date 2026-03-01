@@ -209,26 +209,48 @@ def draw_smpl_overlay(img, joints, virtual_markers, coef_x, coef_y, img_w, img_h
     return img
 
 
-def make_panel(orig_frame, mp_frame, smpl_frame, title, loss, mpjpe_cm=None):
-    """3패널 합성 이미지 생성."""
+def crop_zoom_person(frame, landmarks_img, img_w, img_h, pad_ratio=0.15):
+    """
+    MP 랜드마크 기반 사람 영역 자동 크롭 + img_w×img_h 로 확대.
+    사람이 작아 스켈레톤이 잘 안 보일 때 사용.
+    """
+    xs = [lm['x'] for lm in landmarks_img.values() if lm.get('visibility', 1.0) >= 0.3]
+    ys = [lm['y'] for lm in landmarks_img.values() if lm.get('visibility', 1.0) >= 0.3]
+    if not xs:
+        return frame.copy()
+
+    x0 = max(0, (min(xs) - pad_ratio) * img_w)
+    x1 = min(img_w, (max(xs) + pad_ratio) * img_w)
+    y0 = max(0, (min(ys) - pad_ratio) * img_h)
+    y1 = min(img_h, (max(ys) + pad_ratio) * img_h)
+
+    crop = frame[int(y0):int(y1), int(x0):int(x1)]
+    if crop.size == 0:
+        return frame.copy()
+    return cv2.resize(crop, (img_w, img_h), interpolation=cv2.INTER_LINEAR)
+
+
+def make_panel(orig_frame, mp_frame, zoom_overlay, title, loss, mpjpe_cm=None):
+    """
+    3패널 합성 이미지 생성.
+      [원본 전체] | [MediaPipe 전체(초록)] | [사람 영역 확대 — MP+SMPL 동시]
+    패널 3: 사람 영역을 크롭·확대하여 스켈레톤 정렬을 명확히 확인 가능.
+    """
     h, w = orig_frame.shape[:2]
     panel = np.zeros((h, w * 3, 3), dtype=np.uint8)
 
-    # 패널 배치
-    panel[:, 0:w] = orig_frame
-    panel[:, w:2*w] = mp_frame
-    panel[:, 2*w:3*w] = smpl_frame
+    panel[:, 0:w]     = orig_frame
+    panel[:, w:2*w]   = mp_frame
+    panel[:, 2*w:3*w] = zoom_overlay
 
-    # 구분선
-    cv2.line(panel, (w, 0), (w, h), (80, 80, 80), 2)
+    cv2.line(panel, (w, 0),   (w, h),   (80, 80, 80), 2)
     cv2.line(panel, (2*w, 0), (2*w, h), (80, 80, 80), 2)
 
-    # 상단 라벨
-    for col, label in enumerate(['원본 영상', 'MediaPipe 스켈레톤', 'SMPL 피팅 + 가상 마커']):
-        cv2.putText(panel, label, (col*w + 10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+    labels = ['Original', 'MediaPipe (green)', 'ZOOM: MP+SMPL overlay']
+    for col, label in enumerate(labels):
+        cv2.putText(panel, label, (col*w + 10, 28),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
 
-    # 제목 + 수치
     info = title
     if mpjpe_cm is not None:
         info += f'  |  MPJPE={mpjpe_cm:.1f}cm'
@@ -346,19 +368,23 @@ def main():
         # ── 패널 1: 원본 ──────────────────────────────────────────
         panel_orig = frame_disp.copy()
 
-        # ── 패널 2: MediaPipe 스켈레톤 ───────────────────────────
+        # ── 패널 2: MediaPipe 스켈레톤만 (초록) ──────────────────
         panel_mp = frame_disp.copy()
         panel_mp = draw_mp_skeleton(panel_mp, lm_img, DISPLAY_W, DISPLAY_H, color=(0, 230, 0))
 
-        # ── 패널 3: SMPL 스켈레톤 + 가상 마커 ────────────────────
-        panel_smpl = frame_disp.copy()
-        panel_smpl = draw_smpl_overlay(
-            panel_smpl, joints, virtual_markers, coef_x, coef_y, DISPLAY_W, DISPLAY_H
-        )
+        # ── 패널 3: 사람 영역 자동 크롭+확대 후 MP+SMPL 동시 오버레이 ──
+        # 크롭 전 전체 프레임에 오버레이를 먼저 그린 뒤 사람 영역만 확대
+        full_overlay = frame_disp.copy()
+        full_overlay = draw_mp_skeleton(
+            full_overlay, lm_img, DISPLAY_W, DISPLAY_H, color=(0, 220, 0))
+        full_overlay = draw_smpl_overlay(
+            full_overlay, joints, virtual_markers, coef_x, coef_y, DISPLAY_W, DISPLAY_H)
+        # 사람 영역으로 크롭 → 전체 패널 크기로 확대
+        panel_zoom = crop_zoom_person(full_overlay, lm_img, DISPLAY_W, DISPLAY_H)
 
         # ── 합성 ─────────────────────────────────────────────────
         title = f'Frame {ref_fidx} ({ts:.1f}s)'
-        panel = make_panel(panel_orig, panel_mp, panel_smpl, title, loss, mpjpe)
+        panel = make_panel(panel_orig, panel_mp, panel_zoom, title, loss, mpjpe)
 
         # 저장
         out_path = os.path.join(args.out_dir, f'verify_frame{ref_fidx:04d}.jpg')
