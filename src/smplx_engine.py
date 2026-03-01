@@ -3,16 +3,13 @@
 MediaPipe 3D 관측값을 가이드로 하여 SMPL 파라메터를 최적화하고
 고밀도 가상 마커를 추출합니다. (SMPL 6890 정점 모델 사용)
 
-Phase 1 개선사항:
-  - 2-stage 최적화 (Stage1: global_orient+transl, Stage2: 전체)
-  - 200 iteration (30 + 170)
-  - 발레 허용 각도 제한 prior (물리 불가능 포즈 억제, 발레 극단 포즈 허용)
-  - VPoser 자동 활성화 (data/models/vposer_v1_0/ 존재 시)
+Phase 1: 2-stage 최적화 + 발레 각도 제한 prior
+Phase 1+: VPoser v2.0 통합 (V02_05.zip)
 """
 
-import os
-import math
+import os, glob
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
@@ -26,81 +23,152 @@ np.unicode = np.str_
 np.str = np.str_
 
 import smplx
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 
 # ── 발레 허용 관절 최대 회전각 (radian) ─────────────────────────────────────
-# SMPL body_pose joint 순서 (1-indexed = global_orient 제외):
-#   0=L_Hip, 1=R_Hip, 2=spine1, 3=L_Knee, 4=R_Knee, 5=spine2,
-#   6=L_Ankle, 7=R_Ankle, 8=spine3, 9=L_Foot, 10=R_Foot, 11=neck,
-#   12=L_Collar, 13=R_Collar, 14=head, 15=L_Shoulder, 16=R_Shoulder,
-#   17=L_Elbow, 18=R_Elbow, 19=L_Wrist, 20=R_Wrist, 21=jaw, 22=L_Eye
 _BALLET_MAX_ANGLES = torch.tensor([
-    3.0,  # 0  L_Hip      — 아라베스크 170°+, 매우 관대
-    3.0,  # 1  R_Hip      —  "
-    1.2,  # 2  spine1     — 척추 굴곡 69°
-    2.9,  # 3  L_Knee     — 플리에 165°
-    2.9,  # 4  R_Knee     —  "
-    1.2,  # 5  spine2     — 척추 굴곡
-    1.6,  # 6  L_Ankle    — 발목 92°
-    1.6,  # 7  R_Ankle    —  "
-    1.2,  # 8  spine3     — 척추 회전
-    1.0,  # 9  L_Foot     — 발 57°
-    1.0,  # 10 R_Foot     —  "
-    1.0,  # 11 neck       — 목 57°
-    0.8,  # 12 L_Collar   — 쇄골 46°
-    0.8,  # 13 R_Collar   —  "
-    0.9,  # 14 head       — 머리 52°
-    3.0,  # 15 L_Shoulder — 포르드브라 170°+
-    3.0,  # 16 R_Shoulder —  "
-    2.6,  # 17 L_Elbow    — 팔꿈치 149°
-    2.6,  # 18 R_Elbow    —  "
-    1.0,  # 19 L_Wrist    — 손목 57°
-    1.0,  # 20 R_Wrist    —  "
-    0.5,  # 21 jaw        — 턱 29°
-    0.5,  # 22 L_Eye      — 눈 (무시용)
+    3.0, 3.0,  # L_Hip, R_Hip   — 아라베스크 허용
+    1.2,       # spine1
+    2.9, 2.9,  # L_Knee, R_Knee — 플리에 허용
+    1.2,       # spine2
+    1.6, 1.6,  # L_Ankle, R_Ankle
+    1.2,       # spine3
+    1.0, 1.0,  # L_Foot, R_Foot
+    1.0,       # neck
+    0.8, 0.8,  # L_Collar, R_Collar
+    0.9,       # head
+    3.0, 3.0,  # L_Shoulder, R_Shoulder — 포르드브라 허용
+    2.6, 2.6,  # L_Elbow, R_Elbow
+    1.0, 1.0,  # L_Wrist, R_Wrist
+    0.5, 0.5,  # jaw, L_Eye
 ], dtype=torch.float32)
 
 
-def _load_vposer(vposer_dir: str):
-    """VPoser 체크포인트 로드. 파일 없으면 None 반환."""
+# ── VPoser v2.0 Decoder (순수 PyTorch 구현) ──────────────────────────────────
+class _VPoserV2Decoder(nn.Module):
+    """
+    VPoser v2.0 decoder: z (32) → body_pose (69, axis-angle).
+    V02_05 .ckpt 에서 'vp_model.' prefix 제거한 state_dict로 로드.
+
+    Architecture (state_dict에서 역추출):
+      decoder_net = Sequential(
+        Linear(32→512),  # index 0
+        ELU(),           # index 1  (no params)
+        Dropout(0.1),    # index 2  (no params)
+        Linear(512→512), # index 3
+        ELU(),           # index 4  (no params)
+        Linear(512→126), # index 5  → 21 joints × 6D rotation
+      )
+    """
+    def __init__(self):
+        super().__init__()
+        self.decoder_net = nn.Sequential(
+            nn.Linear(32, 512),
+            nn.ELU(),
+            nn.Dropout(0.1),
+            nn.Linear(512, 512),
+            nn.ELU(),
+            nn.Linear(512, 126),   # 21 × 6
+        )
+
+    def _sixd_to_rotmat(self, x: torch.Tensor) -> torch.Tensor:
+        """6D rotation → 3×3 rotation matrix (Gram-Schmidt).
+        x: (..., 6) → out: (..., 3, 3)
+        """
+        a1 = x[..., :3]
+        a2 = x[..., 3:]
+        b1 = F.normalize(a1, dim=-1)
+        dot = (b1 * a2).sum(dim=-1, keepdim=True)
+        b2 = F.normalize(a2 - dot * b1, dim=-1)
+        b3 = torch.linalg.cross(b1, b2)
+        return torch.stack([b1, b2, b3], dim=-1)   # (..., 3, 3)
+
+    def _rotmat_to_aa(self, R: torch.Tensor) -> torch.Tensor:
+        """3×3 rotation matrix → axis-angle (pure PyTorch).
+        R: (..., 3, 3) → out: (..., 3)
+        """
+        trace = R[..., 0, 0] + R[..., 1, 1] + R[..., 2, 2]
+        theta = torch.acos(torch.clamp((trace - 1) / 2, -1 + 1e-6, 1 - 1e-6))
+        # axis = skew-symmetric part / (2 sin θ)
+        skew = torch.stack([
+            R[..., 2, 1] - R[..., 1, 2],
+            R[..., 0, 2] - R[..., 2, 0],
+            R[..., 1, 0] - R[..., 0, 1],
+        ], dim=-1)
+        sin_theta = torch.sin(theta).unsqueeze(-1).clamp(min=1e-6)
+        axis = skew / (2 * sin_theta)
+        return axis * theta.unsqueeze(-1)
+
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """z: (B, 32) → body_pose: (B, 69) axis-angle."""
+        x = self.decoder_net(z)                    # (B, 126)
+        x = x.view(-1, 21, 6)                      # (B, 21, 6)
+        R = self._sixd_to_rotmat(x)                # (B, 21, 3, 3)
+        aa = self._rotmat_to_aa(R)                 # (B, 21, 3)
+        aa = aa.view(-1, 63)                       # (B, 63)
+        # SMPL body_pose=69 (23 joints): 나머지 2개(jaw, eye) zeros 패딩
+        pad = torch.zeros(aa.shape[0], 6, device=aa.device)
+        return torch.cat([aa, pad], dim=1)         # (B, 69)
+
+
+def _load_vposer_v2(vposer_dir: str) -> '_VPoserV2Decoder | None':
+    """VPoser v2.0 .ckpt 로드. 경로 없으면 None 반환."""
+    pattern = os.path.join(vposer_dir, 'V02_05', 'snapshots', '*.ckpt')
+    ckpts = sorted(glob.glob(pattern))
+    if not ckpts:
+        return None
+    ckpt_path = ckpts[0]   # val_loss 낮은 epoch=08 우선 (파일명 정렬)
     try:
-        import glob
-        snapshots = glob.glob(os.path.join(vposer_dir, 'snapshots', '*.pt'))
-        if not snapshots:
-            return None, None
-        from human_body_prior.tools.model_loader import expid2model
-        from human_body_prior.train.vposer_smpl import VPoser
-        ps, best_model_fname = expid2model(vposer_dir)
-        vposer = VPoser(ps)
-        state = torch.load(best_model_fname, map_location='cpu')
-        vposer.load_state_dict(state)
-        vposer.eval()
-        print(f"[SMPLX-Engine] VPoser loaded: {best_model_fname}")
-        return vposer, ps
+        raw = torch.load(ckpt_path, map_location='cpu')
+        sd = raw['state_dict']
+        # 'vp_model.' prefix 제거 후 decoder_net 만 추출
+        decoder_sd = {k.replace('vp_model.', ''): v
+                      for k, v in sd.items()
+                      if k.startswith('vp_model.decoder_net')}
+        decoder = _VPoserV2Decoder()
+        # Dropout은 state_dict에 없으니 strict=False
+        missing, unexpected = decoder.load_state_dict(decoder_sd, strict=False)
+        decoder.eval()
+        print(f"[SMPLX-Engine] VPoser v2.0 loaded: {os.path.basename(ckpt_path)}")
+        if missing:
+            print(f"  missing keys: {missing}")
+        return decoder
     except Exception as e:
-        print(f"[SMPLX-Engine] VPoser not available: {e}")
-        return None, None
+        print(f"[SMPLX-Engine] VPoser v2.0 load failed: {e}")
+        return None
 
 
+# ── 메인 엔진 ────────────────────────────────────────────────────────────────
 class SMPLXEngine:
-    """SMPL-X 엔진 클래스명을 유지하되 내부적으로 SMPL 모델을 사용하여 하위 호환성 유지."""
+    """SMPL-X 엔진 클래스명 유지. 내부적으로 SMPL(6890 정점) 사용."""
 
-    def __init__(self, model_dir: str, device: str = 'cuda' if torch.cuda.is_available() else 'cpu'):
+    def __init__(self, model_dir: str,
+                 device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+                 use_vposer: bool = False):
+        """
+        use_vposer: VPoser v2.0 활성화 여부.
+          기본값 False — VPoser는 2D 재투영 손실 기반으로 학습됨.
+          우리의 3D 월드 좌표 직접 매칭에는 각도 제한 prior가 더 효과적.
+          향후 이미지 재투영 손실 도입 시 True로 전환.
+        """
         self.device = device
         self.model_dir = model_dir
         print(f"[SMPLX-Engine] Initializing SMPL model on {device}...")
 
-        self.model = smplx.create(model_dir, model_type='smpl', gender='neutral',
-                                  ext='pkl').to(device)
+        self.model = smplx.create(model_dir, model_type='smpl',
+                                  gender='neutral', ext='pkl').to(device)
         self.model.eval()
 
-        # VPoser 자동 로드 (체크포인트 존재 시)
-        vposer_dir = os.path.join(model_dir, '..', 'vposer_v1_0')
-        vposer_dir = os.path.normpath(vposer_dir)
-        self.vposer, self.vposer_ps = _load_vposer(vposer_dir)
-        if self.vposer is not None:
-            self.vposer = self.vposer.to(device)
+        # VPoser v2.0 — 명시적으로 활성화할 때만 로드
+        self.vposer = None
+        if use_vposer:
+            vp_dir = os.path.normpath(os.path.join(model_dir, '..', 'vposer_v2_0'))
+            self.vposer = _load_vposer_v2(vp_dir)
+            if self.vposer is not None:
+                self.vposer = self.vposer.to(device)
+            else:
+                print("[SMPLX-Engine] VPoser 로드 실패 — 각도 제한 prior 사용")
 
         # MediaPipe (33 landmarks) → SMPL joint 인덱스 매핑
         self.mp_to_smplx_idx = {
@@ -113,97 +181,79 @@ class SMPLXEngine:
             0:  15,          # Head/Nose
         }
 
-    # ── 내부: 각도 제한 prior ────────────────────────────────────────────────
+    # ── 각도 제한 prior ──────────────────────────────────────────────────────
     def _angle_limit_loss(self, body_pose: torch.Tensor) -> torch.Tensor:
-        """발레 허용 범위를 초과하는 관절 회전에 패널티."""
-        angles = body_pose.view(1, 23, 3).norm(dim=-1)          # (1, 23)
-        max_a = _BALLET_MAX_ANGLES.to(body_pose.device)          # (23,)
-        excess = F.relu(angles - max_a.unsqueeze(0))             # (1, 23)
+        angles = body_pose.view(-1, 23, 3).norm(dim=-1)         # (1, 23)
+        max_a = _BALLET_MAX_ANGLES.to(body_pose.device)
+        excess = F.relu(angles - max_a.unsqueeze(0))
         return (excess ** 2).sum()
 
-    # ── 내부: VPoser 기반 body_pose 디코딩 ──────────────────────────────────
-    def _vposer_decode(self, z: torch.Tensor) -> torch.Tensor:
-        """z (1, 32) → body_pose (1, 63) axis-angle (21 joints)."""
-        with torch.no_grad():
-            body_pose_aa = self.vposer.decode(z, output_type='aa')
-        # VPoser는 21개 관절 출력 → SMPL 23관절에 맞게 패딩
-        bp = body_pose_aa.view(1, -1)   # (1, 63)
-        if bp.shape[1] < 69:
-            pad = torch.zeros(1, 69 - bp.shape[1], device=bp.device)
-            bp = torch.cat([bp, pad], dim=1)
-        return bp
-
-    # ── 공개: 단일 프레임 피팅 ───────────────────────────────────────────────
+    # ── 단일 프레임 피팅 ─────────────────────────────────────────────────────
     def fit_frame(self, mp_world_landmarks: Dict,
                   num_iters: int = 200) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """
-        2-stage SMPLify-3D 최적화.
-
-        Stage 1 (30 iter):  global_orient + transl — 전체 위치/방향 정렬
-        Stage 2 (num_iters-30 iter): 전체 파라미터 — 세부 포즈 피팅
+        2-stage SMPLify-3D.
+        Stage 1 (30 iter): global_orient + transl 정렬
+        Stage 2 (170 iter): 전체 파라미터 (VPoser z or body_pose)
         """
-        # ── 1. 타겟 텐서 구성 ────────────────────────────────────────────────
+        # ── 타겟 구성 ────────────────────────────────────────────────────────
         target_joints = torch.zeros(1, 45, 3, device=self.device)
         conf = torch.zeros(1, 45, 1, device=self.device)
-
         landmark_names = list(mp_world_landmarks.keys())
         for mp_idx, sm_idx in self.mp_to_smplx_idx.items():
             if mp_idx < len(landmark_names):
-                name = landmark_names[mp_idx]
-                p = mp_world_landmarks[name]
+                p = mp_world_landmarks[landmark_names[mp_idx]]
                 target_joints[0, sm_idx] = torch.tensor(
                     [p['x'], -p['y'], p['z']], device=self.device)
                 conf[0, sm_idx] = 1.0
 
-        # ── 2. 최적화 변수 초기화 ────────────────────────────────────────────
-        body_pose    = torch.zeros(1, 69, device=self.device, requires_grad=True)
-        betas        = torch.zeros(1, 10, device=self.device, requires_grad=True)
-        global_orient = torch.zeros(1, 3, device=self.device, requires_grad=True)
-        transl       = torch.zeros(1, 3, device=self.device, requires_grad=True)
+        # ── 파라미터 초기화 ──────────────────────────────────────────────────
+        betas         = torch.zeros(1, 10, device=self.device, requires_grad=True)
+        global_orient = torch.zeros(1, 3,  device=self.device, requires_grad=True)
+        transl        = torch.zeros(1, 3,  device=self.device, requires_grad=True)
 
-        # VPoser 사용 시: z를 최적화, body_pose는 decode 결과로 대체
         use_vposer = self.vposer is not None
         if use_vposer:
             z = torch.zeros(1, 32, device=self.device, requires_grad=True)
+        else:
+            body_pose = torch.zeros(1, 69, device=self.device, requires_grad=True)
 
-        # ── Stage 1: 전체 위치/방향 정렬 (global_orient + transl) ────────────
-        s1_params = [global_orient, transl]
-        opt1 = torch.optim.Adam(s1_params, lr=0.05)
+        # ── Stage 1: global_orient + transl (T-pose 기준으로 정렬) ──────────
         s1_iters = min(30, num_iters)
+        opt1 = torch.optim.Adam([global_orient, transl], lr=0.05)
+        # Stage 1은 항상 T-pose(zeros)로 정렬 — VPoser z=0이 T-pose가 아니므로
+        bp_frozen = torch.zeros(1, 69, device=self.device)
 
-        for i in range(s1_iters):
+        for _ in range(s1_iters):
             opt1.zero_grad()
-            if use_vposer:
-                bp = self._vposer_decode(z).detach()
-            else:
-                bp = body_pose.detach()
-
-            out = self.model(betas=betas.detach(),
-                             body_pose=bp,
-                             global_orient=global_orient,
-                             transl=transl)
-            mj = out.joints[:, :45]
-            loss = (conf * (mj - target_joints) ** 2).sum()
+            out = self.model(betas=betas.detach(), body_pose=bp_frozen,
+                             global_orient=global_orient, transl=transl)
+            loss = (conf * (out.joints[:, :45] - target_joints) ** 2).sum()
             loss.backward()
             opt1.step()
 
-        # ── Stage 2: 전체 파라미터 피팅 ─────────────────────────────────────
+        # ── Stage 2: 전체 파라미터 ───────────────────────────────────────────
+        s2_iters = num_iters - s1_iters
         if use_vposer:
-            s2_params = [z, betas, global_orient, transl]
+            # z는 더 높은 lr로, 나머지는 낮게
+            opt2 = torch.optim.Adam([
+                {'params': [z],             'lr': 0.05},
+                {'params': [betas],         'lr': 0.01},
+                {'params': [global_orient], 'lr': 0.01},
+                {'params': [transl],        'lr': 0.01},
+            ])
         else:
-            s2_params = [body_pose, betas, global_orient, transl]
+            opt2 = torch.optim.Adam([body_pose, betas, global_orient, transl], lr=0.01)
 
-        opt2 = torch.optim.Adam(s2_params, lr=0.01)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            opt2, T_max=num_iters - s1_iters, eta_min=1e-4)
+            opt2, T_max=max(1, s2_iters), eta_min=1e-4)
 
         total_loss = torch.tensor(0.0)
-        for i in range(num_iters - s1_iters):
+        for _ in range(s2_iters):
             opt2.zero_grad()
 
             if use_vposer:
-                bp = self._vposer_decode(z)
-                bp.requires_grad_(True)
+                bp = self.vposer(z)              # 그래디언트 통과
             else:
                 bp = body_pose
 
@@ -213,34 +263,31 @@ class SMPLXEngine:
 
             loss_joint = (conf * (mj - target_joints) ** 2).sum()
             loss_shape = (betas ** 2).sum() * 0.1
-
             if use_vposer:
-                loss_pose = (z ** 2).sum() * 0.1          # z latent 정규화
+                # z 정규화 매우 작게 — data term 우선
+                loss_pose = (z ** 2).sum() * 0.001
             else:
-                loss_pose  = (bp ** 2).sum() * 0.005      # L2 (낮게)
-                loss_pose += self._angle_limit_loss(bp) * 2.0  # 발레 각도 제한
+                loss_pose  = (bp ** 2).sum() * 0.005
+                loss_pose += self._angle_limit_loss(bp) * 2.0
 
             total_loss = loss_joint + loss_shape + loss_pose
             total_loss.backward()
             opt2.step()
             scheduler.step()
 
-        # ── 3. 결과 반환 ─────────────────────────────────────────────────────
+        # ── 결과 반환 ────────────────────────────────────────────────────────
         with torch.no_grad():
-            if use_vposer:
-                final_bp = self._vposer_decode(z).detach()
-            else:
-                final_bp = body_pose
-
+            final_bp = self.vposer(z) if use_vposer else body_pose
             final_out = self.model(betas=betas, body_pose=final_bp,
                                    global_orient=global_orient, transl=transl)
             vertices = final_out.vertices[0].cpu().numpy()
             joints   = final_out.joints[0].cpu().numpy()
 
         return vertices, joints, {
-            "loss": total_loss.item(),
-            "joints": joints,
+            "loss":        total_loss.item(),
+            "joints":      joints,
             "vposer_used": use_vposer,
+            "body_pose":   final_bp.detach().cpu().numpy(),   # (1, 69) GMM용
         }
 
 
